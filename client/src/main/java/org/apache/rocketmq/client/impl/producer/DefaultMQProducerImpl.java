@@ -117,6 +117,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         this.rpcHook = rpcHook;
 
         this.asyncSenderThreadPoolQueue = new LinkedBlockingQueue<Runnable>(50000);
+        //线程A中做一个线程池
         this.defaultAsyncSenderExecutor = new ThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors(),
             Runtime.getRuntime().availableProcessors(),
@@ -178,29 +179,34 @@ public class DefaultMQProducerImpl implements MQProducerInner {
      *
      */
     public void start(final boolean startFactory) throws MQClientException {
+        //线程A中的DefaultMQProducerImpl对象中serviceState的初始值是CREATE_JUST
         switch (this.serviceState) {
-            // 1. 只有 serviceState 状态为 CREATE_JUST 时，才启动 Producer
             case CREATE_JUST:
-
-                //2. 防止启动多个 Producer，先把 serviceState 状态修改为 START_FAILED。
+                /**
+                 * 假如再有一个线程拿到了线程A的DefaultMQProducerImpl对象引用,当然这是不可能的，因为线程A中DefaultMQProducerImpl对象引用
+                 * 只能通过DefaultMQProducer对象的引用来获取；这里重新赋值，只是为了防止在线程A中通过相同的DefaultMQProducer对象去启动一个生产者；
+                 */
                 this.serviceState = ServiceState.START_FAILED;
-                // 3. 检查 groupName 是否合法
+                //主要是对入参producerGroup的一些检查
                 this.checkConfig();
-                //4. 判断是否需要设置 InstanceName 。
+                //假如没有设置参数{rocketmq.client.name}，则{org.apache.rocketmq.client.ClientConfig.instanceName}的值更新成pid
                 if (!this.defaultMQProducer.getProducerGroup().equals(MixAll.CLIENT_INNER_PRODUCER_GROUP)) {
                     this.defaultMQProducer.changeInstanceNameToPID();
                 }
-                // 5. 构建 MQClientInstance 对象。
+                /**
+                 * 1、所有线程拿到的都是同一个MQClientManager对象》》单例模式
+                 */
                 this.mQClientFactory = MQClientManager.getInstance().getAndCreateMQClientInstance(this.defaultMQProducer, rpcHook);
-                // 6. 将 DefaultMQProducerImpl 对象注册到 ConcurrentHashMap<String/* group */, MQProducerInner> producerTable 中
+                //假如说一个进程中的所有生产者使用的都是同一个MQClientInstance，那么这些生产者应该隶属与不同的生产者组
                 boolean registerOK = mQClientFactory.registerProducer(this.defaultMQProducer.getProducerGroup(), this);
                 if (!registerOK) {
+                    // 这里为什么要重新赋值？
                     this.serviceState = ServiceState.CREATE_JUST;
                     throw new MQClientException("The producer group[" + this.defaultMQProducer.getProducerGroup()
                         + "] has been created before, specify another name please." + FAQUrl.suggestTodo(FAQUrl.GROUP_NAME_DUPLICATE_URL),
                         null);
                 }
-                // 7.以主题名"TBW102"为key值，新初始化的TopicPublishInfo对象为value值存入DefaultMQProducerImpl.topicPublishInfoTable变量中
+                //这个有什么用？
                 this.topicPublishInfoTable.put(this.defaultMQProducer.getCreateTopicKey(), new TopicPublishInfo());
 
                 if (startFactory) {

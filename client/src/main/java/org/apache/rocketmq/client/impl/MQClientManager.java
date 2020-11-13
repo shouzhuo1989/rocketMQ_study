@@ -45,12 +45,20 @@ public class MQClientManager {
     }
 
     public MQClientInstance getAndCreateMQClientInstance(final ClientConfig clientConfig, RPCHook rpcHook) {
+        //构建clientId
         String clientId = clientConfig.buildMQClientId();
+        //第一次进来拿到的是null   假如我们在同一个进程中启动多个生产者，假如clientId一样，那么使用的MQClientInstance就是一样的
         MQClientInstance instance = this.factoryTable.get(clientId);
         if (null == instance) {
+            /**
+             * 为什么这里要重新构建一个ClientConfig对象？
+             *
+             *
+             */
             instance =
                 new MQClientInstance(clientConfig.cloneClientConfig(),
                     this.factoryIndexGenerator.getAndIncrement(), clientId, rpcHook);
+            //因为所有线程拿到的都是同一个MQClientManager对象，所以MQClientManager对象中的数据是所有线程共享的
             MQClientInstance prev = this.factoryTable.putIfAbsent(clientId, instance);
             if (prev != null) {
                 instance = prev;

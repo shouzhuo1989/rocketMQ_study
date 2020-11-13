@@ -33,6 +33,7 @@ public class Producer {
         /*
          * Instantiate with a producer group name.
          */
+        //给一个线程A，我们new一个DefaultMQProducer对象
         DefaultMQProducer producer = new DefaultMQProducer("please_rename_unique_group_name");
 
         /*
@@ -47,6 +48,8 @@ public class Producer {
          * </pre>
          */
         producer.setNamesrvAddr("127.0.0.1:9876");
+        //假如设置了这个值，即使是同一进程中启动的生产者，使用的也是不同的MQClientInstance
+       // producer.setUnitName("");
         /*
          * Launch the instance.
          * producer启动时应该做哪些事情？

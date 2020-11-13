@@ -228,8 +228,9 @@ public class MQClientInstance {
      * 从严格意义上说，RocketMQ并没有实现真正的消息消费的Push模式，而是对Pull模式进行了一定的优化，一方面在Consumer端开启后台独立的线程—PullMessageService不断地从阻塞队列—pullRequestQueue中获取PullRequest请求并通过网络通信模块发送Pull消息的RPC请求给Broker端。另外一方面，后台独立线程—rebalanceService根据Topic中消息队列个数和当前消费组内消费者个数进行负载均衡，将产生的对应PullRequest实例放入阻塞队列—pullRequestQueue中。这里算是比较典型的生产者-消费者模型，实现了准实时的自动消息拉取。然后，再根据业务反馈是否成功消费来推动消费进度
      */
     public void start() throws MQClientException {
-
+        //同一时刻，只能有一个线程使用当前client来启动producer
         synchronized (this) {
+            //假如说一个线程中，同时有两个producer在使用该client，那么也只有一个能启动成功
             switch (this.serviceState) {
                 case CREATE_JUST:
                     this.serviceState = ServiceState.START_FAILED;
@@ -242,20 +243,15 @@ public class MQClientInstance {
                     if (null == this.clientConfig.getNamesrvAddr()) {
                         this.mQClientAPIImpl.fetchNameServerAddr();
                     }
-                    // Start request-response channel
-                    // 2. 启动 Netty 客户端服务
+
                     this.mQClientAPIImpl.start();
-                    // Start various schedule tasks
-                    // 3. 设置多个定时任务
+
                     this.startScheduledTask();
-                    // Start pull service
-                    // 4. 开启 pullMessageService 服务
+                   // todo  producer为什么也启动这个？
                     this.pullMessageService.start();
-                    // Start rebalance service
-                    // 5. 开启 rebalanceService 服务 rebalanceService根据Topic中消息队列个数和当前消费组内消费者个数进行负载均衡
+                    //todo  producer为什么也启动这个？
                     this.rebalanceService.start();
-                    // Start push service
-                    // 6. 开启 发送消息服务
+                    //todo MQClientInstance内部为什么要启动一个defaultMQProducer，而且还向broker发送心跳？
                     this.defaultMQProducer.getDefaultMQProducerImpl().start(false);
                     log.info("the client factory [{}] start OK", this.clientId);
                     this.serviceState = ServiceState.RUNNING;
@@ -573,6 +569,9 @@ public class MQClientInstance {
     }
 
     private void sendHeartbeatToAllBroker() {
+        /**
+         * 假如是生产者，heartbeatData中有clientid groupName
+         */
         final HeartbeatData heartbeatData = this.prepareHeartbeatData();
         final boolean producerEmpty = heartbeatData.getProducerDataSet().isEmpty();
         final boolean consumerEmpty = heartbeatData.getConsumerDataSet().isEmpty();
@@ -975,7 +974,6 @@ public class MQClientInstance {
         if (null == group || null == producer) {
             return false;
         }
-
         MQProducerInner prev = this.producerTable.putIfAbsent(group, producer);
         if (prev != null) {
             log.warn("the producer group[{}] exist already.", group);
