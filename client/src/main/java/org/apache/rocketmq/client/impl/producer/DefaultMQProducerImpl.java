@@ -169,6 +169,14 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         this.start(true);
     }
 
+    /**
+     * 关于代码的一些说明：
+     * 怎样才算开启了一个消费者或者生产者呢？
+     * 所谓生产者也好，消费者也好只是一个名称，作用在于方便信息传递；其本质在于名称下所代表的那些功能，也就是
+     * 说，我们只要启动了实现那些功能的线程，以及配置好了这些线程所需要的基础数据，就可以说是开启了一个消费者或者生产者。
+     * 就像目前我们所在的这个类{@link DefaultMQProducerImpl}，它实际上就是在做类似配置基础数据的工作
+     *
+     */
     public void start(final boolean startFactory) throws MQClientException {
         switch (this.serviceState) {
             // 1. 只有 serviceState 状态为 CREATE_JUST 时，才启动 Producer
