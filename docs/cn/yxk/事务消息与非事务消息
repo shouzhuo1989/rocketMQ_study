@@ -1,0 +1,75 @@
+事务消息:
+msg = {Message@1610}
+ topic = "TopicTest1234"
+ flag = 0
+ properties = {HashMap@1624}  size = 5
+  0 = {HashMap$Node@1628} "KEYS" -> "KEY0"
+  1 = {HashMap$Node@1721} "TRAN_MSG" -> "true"
+  2 = {HashMap$Node@1629} "WAIT" -> "true"
+  3 = {HashMap$Node@1722} "PGROUP" -> "transaction_producer_group"
+  4 = {HashMap$Node@1630} "TAGS" -> "TagA"
+ body = {byte[16]@1625}
+ transactionId = null
+
+非事务消息
+msg = {Message@1955} "Message{topic='TopicTest', flag=0, properties={UNIQ_KEY=A9FEC1806FB818B4AAC25487EC2F0000, WAIT=true, TAGS=TagA}, body=[72, 101, 108, 108, 111, 32, 82, 111, 99, 107, 101, 116, 77, 81, 32, 48], transactionId='null'}"
+ topic = "TopicTest"
+ flag = 0
+ properties = {HashMap@2014}  size = 3
+  0 = {HashMap$Node@2017} "UNIQ_KEY" -> "A9FEC1806FB818B4AAC25487EC2F0000"
+  1 = {HashMap$Node@2018} "WAIT" -> "true"
+  2 = {HashMap$Node@2019} "TAGS" -> "TagA"
+ body = {byte[16]@1991}
+ transactionId = null
+总结：事务消息会在properties容器中增加一对键值对：{HashMap$Node@1721} "TRAN_MSG" -> "true"
+
+
+非事务消息_producer：
+sendMessage:448, MQClientAPIImpl (org.apache.rocketmq.client.impl)
+sendMessage:403, MQClientAPIImpl (org.apache.rocketmq.client.impl)
+sendKernelImpl:875, DefaultMQProducerImpl (org.apache.rocketmq.client.impl.producer)
+sendDefaultImpl:591, DefaultMQProducerImpl (org.apache.rocketmq.client.impl.producer)
+send:1357, DefaultMQProducerImpl (org.apache.rocketmq.client.impl.producer)
+send:1303, DefaultMQProducerImpl (org.apache.rocketmq.client.impl.producer)
+send:351, DefaultMQProducer (org.apache.rocketmq.client.producer)
+main:74, Producer (org.apache.rocketmq.example.quickstart)
+
+事务消息_producer：
+sendMessage:445, MQClientAPIImpl (org.apache.rocketmq.client.impl)
+sendMessage:403, MQClientAPIImpl (org.apache.rocketmq.client.impl)
+sendKernelImpl:875, DefaultMQProducerImpl (org.apache.rocketmq.client.impl.producer)
+sendDefaultImpl:591, DefaultMQProducerImpl (org.apache.rocketmq.client.impl.producer)
+send:1357, DefaultMQProducerImpl (org.apache.rocketmq.client.impl.producer)
+send:1303, DefaultMQProducerImpl (org.apache.rocketmq.client.impl.producer)
+sendMessageInTransaction:1233, DefaultMQProducerImpl (org.apache.rocketmq.client.impl.producer)
+sendMessageInTransaction:90, TransactionMQProducer (org.apache.rocketmq.client.producer)
+main:61, TransactionProducer (org.apache.rocketmq.example.transaction)
+
+总结：事务消息和非事务消息的核心发送过程是一样的
+
+非事务消息_broker：
+putMessage:538, CommitLog (org.apache.rocketmq.store)
+putMessage:395, DefaultMessageStore (org.apache.rocketmq.store)
+sendMessage:364, SendMessageProcessor (org.apache.rocketmq.broker.processor)
+processRequest:85, SendMessageProcessor (org.apache.rocketmq.broker.processor)
+run:203, NettyRemotingAbstract$1 (org.apache.rocketmq.remoting.netty)
+run:80, RequestTask (org.apache.rocketmq.remoting.netty)
+call:511, Executors$RunnableAdapter (java.util.concurrent)
+run$$$capture:266, FutureTask (java.util.concurrent)
+run:-1, FutureTask (java.util.concurrent)
+
+事务消息_broker：
+putMessage:576, CommitLog (org.apache.rocketmq.store)
+putMessage:395, DefaultMessageStore (org.apache.rocketmq.store)
+putHalfMessage:190, TransactionalMessageBridge (org.apache.rocketmq.broker.transaction.queue)
+prepareMessage:64, TransactionalMessageServiceImpl (org.apache.rocketmq.broker.transaction.queue)
+sendMessage:362, SendMessageProcessor (org.apache.rocketmq.broker.processor)
+processRequest:85, SendMessageProcessor (org.apache.rocketmq.broker.processor)
+run:203, NettyRemotingAbstract$1 (org.apache.rocketmq.remoting.netty)
+run:80, RequestTask (org.apache.rocketmq.remoting.netty)
+call:511, Executors$RunnableAdapter (java.util.concurrent)
+run$$$capture:266, FutureTask (java.util.concurrent)
+run:-1, FutureTask (java.util.concurrent)
+总结：事务消息比非事务消息多出两个环节：prepareMessage、putHalfMessage
+
+
