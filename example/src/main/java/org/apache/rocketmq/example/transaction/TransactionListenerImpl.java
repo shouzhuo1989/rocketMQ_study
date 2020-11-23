@@ -29,6 +29,11 @@ public class TransactionListenerImpl implements TransactionListener {
 
     private ConcurrentHashMap<String, Integer> localTrans = new ConcurrentHashMap<>();
 
+    /**
+     * 在实际的应用环境中，这个TransactionListener是我们需要实现的接口，提供两个功能：
+     * 1、执行本地事务
+     * 2、会查本地事务
+     */
     @Override
     public LocalTransactionState executeLocalTransaction(Message msg, Object arg) {
         int value = transactionIndex.getAndIncrement();

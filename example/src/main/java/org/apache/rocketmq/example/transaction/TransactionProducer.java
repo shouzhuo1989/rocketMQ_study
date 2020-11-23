@@ -47,8 +47,13 @@ public class TransactionProducer {
                 return thread;
             }
         });
-
+        /**
+         * broker端定时会向producer发送回查事务的请求，这个线程池就是用来处理这些请求的
+         */
         producer.setExecutorService(executorService);
+        /**
+         * 这个transactionListener用来执行本地事务
+         */
         producer.setTransactionListener(transactionListener);
         producer.start();
 
