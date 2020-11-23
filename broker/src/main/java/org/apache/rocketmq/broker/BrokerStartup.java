@@ -48,6 +48,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.rocketmq.remoting.netty.TlsSystemConfig.TLS_ENABLE;
 
+/**
+ * broker要做的事情：
+ * 1、接收producer的请求
+ * 2、处理producer发送过来的数据
+ * 3、接收consumer的请求
+ * 4、处理consumer发送过来的数据
+ * 5、向namesvr注册，发送心跳包
+ * 6、同步数据到salver
+ *
+ */
 public class BrokerStartup {
     public static Properties properties = null;
     public static CommandLine commandLine = null;
@@ -87,17 +97,12 @@ public class BrokerStartup {
         }
     }
 
-    /**
-     * 1、当前计算的数据来自哪里？
-     *  （1）操作系统配置；
-     *  （2）代码配置；
-     *  （3）本地文件系统；
-     * 2、计算之后存储在哪里，即如何引用的问题；
-     *
-     *
-     */
+
     public static BrokerController createBrokerController(String[] args) {
-        //拿系统配置
+
+        /**
+         * 现在我们是在ide环境下启动broker，那我们就关注这种环境下的东西
+         */
         System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));
 
         if (null == System.getProperty(NettySystemConfig.COM_ROCKETMQ_REMOTING_SOCKET_SNDBUF_SIZE)) {
@@ -109,41 +114,27 @@ public class BrokerStartup {
         }
 
         try {
-            //PackageConflictDetect.detectFastjson();
-            //拿命令行参数
+
             Options options = ServerUtil.buildCommandlineOptions(new Options());
             commandLine = ServerUtil.parseCmdLine("mqbroker", args, buildCommandlineOptions(options),
                 new PosixParser());
             if (null == commandLine) {
                 System.exit(-1);
             }
-            /**
-             *拿broker的配置
-             */
             final BrokerConfig brokerConfig = new BrokerConfig();
-            /**
-             * 拿netty server的配置
-             */
             final NettyServerConfig nettyServerConfig = new NettyServerConfig();
-            /**
-             *拿netty client的配置
-             */
             final NettyClientConfig nettyClientConfig = new NettyClientConfig();
-
             nettyClientConfig.setUseTLS(Boolean.parseBoolean(System.getProperty(TLS_ENABLE,
                 String.valueOf(TlsSystemConfig.tlsMode == TlsMode.ENFORCING))));
             nettyServerConfig.setListenPort(10911);
-            /**
-             *拿Message Store的配置
-             */
+
             final MessageStoreConfig messageStoreConfig = new MessageStoreConfig();
 
-            //如果是从服务器
+
             if (BrokerRole.SLAVE == messageStoreConfig.getBrokerRole()) {
                 int ratio = messageStoreConfig.getAccessMessageInMemoryMaxRatio() - 10;
                 messageStoreConfig.setAccessMessageInMemoryMaxRatio(ratio);
             }
-            //把用户通过命令行传进来的数据存储在我们的代码中
             if (commandLine.hasOption('c')) {
                 String file = commandLine.getOptionValue('c');
                 if (file != null) {
@@ -175,7 +166,6 @@ public class BrokerStartup {
                 try {
                     String[] addrArray = namesrvAddr.split(";");
                     for (String addr : addrArray) {
-                        //有啥用？
                         RemotingUtil.string2SocketAddress(addr);
                     }
                 } catch (Exception e) {
@@ -207,7 +197,6 @@ public class BrokerStartup {
             JoranConfigurator configurator = new JoranConfigurator();
             configurator.setContext(lc);
             lc.reset();
-            //configurator>>这个玩意儿搁哪儿去了？
             configurator.doConfigure(brokerConfig.getRocketmqHome() + "/conf/logback_broker.xml");
 
             if (commandLine.hasOption('p')) {
@@ -231,7 +220,6 @@ public class BrokerStartup {
             MixAll.printObjectProperties(log, nettyServerConfig);
             MixAll.printObjectProperties(log, nettyClientConfig);
             MixAll.printObjectProperties(log, messageStoreConfig);
-            //这四个货都给了BrokerController，以后我们拿它们的数据就找BrokerController
             final BrokerController controller = new BrokerController(
                 brokerConfig,
                 nettyServerConfig,
@@ -251,7 +239,6 @@ public class BrokerStartup {
                 controller.shutdown();
                 System.exit(-3);
             }
-            //这玩意儿不知道在干啥，但这不是重点，不理它
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 private volatile boolean hasShutdown = false;
                 private AtomicInteger shutdownTimes = new AtomicInteger(0);

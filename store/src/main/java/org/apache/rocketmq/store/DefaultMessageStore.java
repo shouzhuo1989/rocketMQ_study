@@ -211,10 +211,11 @@ public class DefaultMessageStore implements MessageStore {
     }
 
     /**
-     * @throws Exception
+     * 从代码层面讲，代码怎么组织是人安排的，总之存储服务需要做这么多的事情，你开启十个线程也好，一个线程也好，完成这些事情就好
+     * 从设计层面讲，存储服务要做哪些事情
      */
     public void start() throws Exception {
-        //1、写lock 文件,尝试获取lock文件锁，保证磁盘上的文件只会被一个messageStore读写
+        //一个messageStore对象只能被用来启动一个broker的messageStore功能
         lock = lockFile.getChannel().tryLock(0, 1, false);
         if (lock == null || lock.isShared() || !lock.isValid()) {
             throw new RuntimeException("Lock failed,MQ already started");
@@ -229,6 +230,7 @@ public class DefaultMessageStore implements MessageStore {
              * 3. Calculate the reput offset according to the consume queue;
              * 4. Make sure the fall-behind messages to be dispatched before starting the commitlog, especially when the broker role are automatically changed.
              */
+            //一定是先有了要实现的功能，然后才有了代码；类是代码的组织方式，好处是复用；就像CommitLog这个类，我们完全可以不要，只是像getMinOffset这个方法所实现的东西，我们就要重复去写
             long maxPhysicalPosInLogicQueue = commitLog.getMinOffset();
             for (ConcurrentMap<Integer, ConsumeQueue> maps : this.consumeQueueTable.values()) {
                 for (ConsumeQueue logic : maps.values()) {
@@ -255,7 +257,10 @@ public class DefaultMessageStore implements MessageStore {
             log.info("[SetReputOffset] maxPhysicalPosInLogicQueue={} clMinOffset={} clMaxOffset={} clConfirmedOffset={}",
                 maxPhysicalPosInLogicQueue, this.commitLog.getMinOffset(), this.commitLog.getMaxOffset(), this.commitLog.getConfirmOffset());
             this.reputMessageService.setReputFromOffset(maxPhysicalPosInLogicQueue);
-            //6、启动reputMessageService，该服务负责将CommitLog中的消息offset记录到cosumeQueue文件中
+            /**
+             * 开启新线程
+             * 启动reputMessageService，该服务负责将CommitLog中的消息offset记录到cosumeQueue文件中
+             */
             this.reputMessageService.start();
 
             /**
@@ -273,20 +278,25 @@ public class DefaultMessageStore implements MessageStore {
         }
 
         if (!messageStoreConfig.isEnableDLegerCommitLog()) {
-            //7、启动haService，数据主从同步的服务
+            /**
+             * 启动haService，数据主从同步的服务
+             * 这个里面又启动了几个新线程
+             */
             this.haService.start();
-            //5、针对master，启动延时消息调度服务
+            //启动几个定时任务
             this.handleScheduleMessageService(messageStoreConfig.getBrokerRole());
         }
-        //2、启动FlushConsumeQueueService，是一个单线程的服务，定时将consumeQueue文件的数据刷新到磁盘，周期由参数flushIntervalConsumeQueue设置，默认1sec
         /**
-         * 数据写入文件后，因为多级缓存的原因不会马上写到磁盘上，所以会有一个单独的线程定时调用flush，这里是flush consumeQueue文件的。
-         * CommitLog和IndexFile的也有类似的逻辑，只是不是在这里启动的
+         * 启动新线程
          */
         this.flushConsumeQueueService.start();
-        //3、启动CommitLog
+        /**
+         * 里面启动了新线程
+         */
         this.commitLog.start();
-        //4、消息存储指标统计服务，RT，TPS...
+        /**
+         * 启动新线程
+         */
         this.storeStatsService.start();
         //8、对于新的broker，初始化文件存储的目录
         this.createTempFile();
@@ -363,6 +373,7 @@ public class DefaultMessageStore implements MessageStore {
 
     /**
      * 这个方法主要做存储前后的一些校验   主要的存储工作委托给了CommitLog
+     * 每个broker都会有一个DefaultMessageStore对象  DefaultMessageStore可以说是若干个线程的组合
      * @param msg Message instance to store
      * @return
      */
@@ -370,17 +381,16 @@ public class DefaultMessageStore implements MessageStore {
         //判断运行状态
         if (this.shutdown) {
             log.warn("message store has shutdown, so putMessage is forbidden");
-            //PutMessageStatus>>枚举Put Status
+            //DefaultMessageStore服务已经关闭
             return new PutMessageResult(PutMessageStatus.SERVICE_NOT_AVAILABLE, null);
         }
-        //如果当前节点为SLAVE，则禁止写入  messageStoreConfig>>仓库配置中有brokerRole
-        //假如是SLAVE，就不要连了，还连上来干嘛？
+        //broker的角色存储messageStoreConfig中
         if (BrokerRole.SLAVE == this.messageStoreConfig.getBrokerRole()) {
             long value = this.printTimes.getAndIncrement();
             if ((value % 50000) == 0) {
                 log.warn("message store is slave mode, so putMessage is forbidden ");
             }
-
+            //该节点是slave，不存储消息
             return new PutMessageResult(PutMessageStatus.SERVICE_NOT_AVAILABLE, null);
         }
         //判断是否有可写权限
@@ -404,11 +414,11 @@ public class DefaultMessageStore implements MessageStore {
             log.warn("putMessage message properties length too long " + msg.getPropertiesString().length());
             return new PutMessageResult(PutMessageStatus.PROPERTIES_SIZE_EXCEEDED, null);
         }
-        // 判断当前系统是否正忙
+        // 判断当前系统是否正忙    后面注意这个值beginTimeInLock
         if (this.isOSPageCacheBusy()) {
             return new PutMessageResult(PutMessageStatus.OS_PAGECACHE_BUSY, null);
         }
-        //这里为什么要通过这种方式来获取当前系统时间的毫秒值？
+
         long beginTime = this.getSystemClock().now();
         //消息数据持久化  存储到commitlog文件
         PutMessageResult result = this.commitLog.putMessage(msg);
@@ -490,6 +500,7 @@ public class DefaultMessageStore implements MessageStore {
          如果当前有正在写入的消息，则 begin 为写入消息获取开始时间
          */
         long begin = this.getCommitLog().getBeginTimeInLock();
+
         long diff = this.systemClock.now() - begin;
 
         return diff < 10000000

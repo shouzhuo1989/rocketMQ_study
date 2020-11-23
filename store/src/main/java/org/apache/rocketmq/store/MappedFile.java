@@ -234,9 +234,9 @@ public class MappedFile extends ReferenceResource {
     public AppendMessageResult appendMessagesInner(final MessageExt messageExt, final AppendMessageCallback cb) {
         assert messageExt != null;
         assert cb != null;
-
+        //从这个位置开始写
         int currentPos = this.wrotePosition.get();
-
+        //当前文件还有空间，可以继续写
         if (currentPos < this.fileSize) {
             //capacity  limit   position
             ByteBuffer byteBuffer = writeBuffer != null ? writeBuffer.slice() : this.mappedByteBuffer.slice();

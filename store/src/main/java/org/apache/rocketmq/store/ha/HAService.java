@@ -112,8 +112,17 @@ public class HAService {
     public void start() throws Exception {
         //前期的准备工作   初始化selector  serverSocketChannel
         this.acceptSocketService.beginAccept();
+        /**
+         * 启动新线程
+         */
         this.acceptSocketService.start();
+        /**
+         * 启动新线程
+         */
         this.groupTransferService.start();
+        /**
+         * 启动新线程
+         */
         this.haClient.start();
     }
 

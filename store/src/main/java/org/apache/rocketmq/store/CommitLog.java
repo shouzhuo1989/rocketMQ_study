@@ -95,6 +95,9 @@ public class CommitLog {
     }
 
     public void start() {
+        /**
+         * 启动新线程
+         */
         this.flushCommitLogService.start();
 
         if (defaultMessageStore.getMessageStoreConfig().isTransientStorePoolEnable()) {
@@ -550,7 +553,7 @@ public class CommitLog {
         int queueId = msg.getQueueId();
 
         final int tranType = MessageSysFlag.getTransactionValue(msg.getSysFlag());
-        // 对延迟消息的一些处理
+        // todo  为什么tranType是这两种情况的时候，才对延迟消息处理？
         if (tranType == MessageSysFlag.TRANSACTION_NOT_TYPE
             || tranType == MessageSysFlag.TRANSACTION_COMMIT_TYPE) {
             // Delay Delivery  如果设置的延迟消息级别大于系统默认的最大值，则设置默认的最大值（默认最大级别为18）
@@ -575,7 +578,16 @@ public class CommitLog {
 
         long elapsedTimeInLock = 0;
         MappedFile unlockMappedFile = null;
-        // 获取最后一个 mappedFile 文件（最后一个是可写入的）
+        /**
+         *  怎么判断有没有的？
+         *  在mappedFileQueue中有一个缓存，存储了所有当前broker的所有commitlog，所以假如这个缓存是空的，说明还没有创建mappedFile
+         *  我现在要往文件中写数据了，那么我要知道哪些信息呢？
+         *  （1）往哪个文件写；
+         *  （2）从哪个位置开始写；
+         *
+         *
+          */
+
         MappedFile mappedFile = this.mappedFileQueue.getLastMappedFile();
         // put message 需要获取锁，配置文件中可以配置使用自旋锁或重入锁
         putMessageLock.lock(); //spin or ReentrantLock ,depending on store config
@@ -595,7 +607,7 @@ public class CommitLog {
                 beginTimeInLock = 0;
                 return new PutMessageResult(PutMessageStatus.CREATE_MAPEDFILE_FAILED, null);
             }
-            // 向文件中添加信息   委托给了mappedFile
+            // 向文件中写消息
             result = mappedFile.appendMessage(msg, this.appendMessageCallback);
             switch (result.getStatus()) {
                 case PUT_OK:
@@ -624,13 +636,13 @@ public class CommitLog {
                     beginTimeInLock = 0;
                     return new PutMessageResult(PutMessageStatus.UNKNOWN_ERROR, result);
             }
-
+            //上锁时间
             elapsedTimeInLock = this.defaultMessageStore.getSystemClock().now() - beginLockTimestamp;
             beginTimeInLock = 0;
         } finally {
             putMessageLock.unlock();
         }
-        // 存储消息超过500毫秒，打印警告信息
+        // 上锁时间超过500ms 打印警告
         if (elapsedTimeInLock > 500) {
             log.warn("[NOTIFYME]putMessage in lock cost time(ms)={}, bodyLength={} AppendMessageResult={}", elapsedTimeInLock, msg.getBody().length, result);
         }
@@ -1214,7 +1226,7 @@ public class CommitLog {
             long wroteOffset = fileFromOffset + byteBuffer.position();
 
             this.resetByteBuffer(hostHolder, 8);
-            //拿到msgId
+            //msgId是在broker端生成的
             String msgId = MessageDecoder.createMessageId(this.msgIdMemory, msgInner.getStoreHostBytes(hostHolder), wroteOffset);
 
             // Record ConsumeQueue information
@@ -1224,6 +1236,7 @@ public class CommitLog {
             keyBuilder.append(msgInner.getQueueId());
             //拿到msg key
             String key = keyBuilder.toString();
+            //topicQueueTable broker端的缓存  topic-QueueId为key  queueOffset为value
             Long queueOffset = CommitLog.this.topicQueueTable.get(key);
             if (null == queueOffset) {
                 queueOffset = 0L;
@@ -1245,11 +1258,6 @@ public class CommitLog {
                 default:
                     break;
             }
-
-            /**
-             * Serialize message
-             * PropertiesString是什么鬼？
-             */
             final byte[] propertiesData =
                 msgInner.getPropertiesString() == null ? null : msgInner.getPropertiesString().getBytes(MessageDecoder.CHARSET_UTF8);
 

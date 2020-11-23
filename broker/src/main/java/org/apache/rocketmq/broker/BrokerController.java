@@ -171,7 +171,6 @@ public class BrokerController {
         final NettyClientConfig nettyClientConfig,
         final MessageStoreConfig messageStoreConfig
     ) {
-        //看看这货藏了多少宝贝
         this.brokerConfig = brokerConfig;
         this.nettyServerConfig = nettyServerConfig;
         this.nettyClientConfig = nettyClientConfig;
@@ -235,12 +234,21 @@ public class BrokerController {
      * 注册请求的processor
      * 初始化一些定时任务，包括记录日志、consumer offset持久化、consume延迟检查、更新nameserv地址、slave的配置数据同步等
      */
+    /**
+     * messageStore
+     * remotingServer
+     * fastRemotingServer
+     * fileWatchService
+     * brokerOuterAPI
+     * pullRequestHoldService
+     * clientHousekeepingService
+     * filterServerManager
+     * brokerStatsManager
+     * brokerFastFailure
+     */
     public boolean initialize() throws CloneNotSupportedException {
         /**
-         * 加载C:\Users\asd\store\config\topics.json
-         * 以后我们要用topics.json中的数据，就先找BrokerController拿到topicConfigManager，
-         * 然后再从topicConfigManager中拿到topicConfigTable，
-         * 最后从topicConfigTable中取
+         * 加载C:\Users\asd\store\config\topics.json   第一次启动文件还没有
          */
         boolean result = this.topicConfigManager.load();
         //加载C:\Users\asd\store\config\consumerOffset.json
@@ -252,10 +260,8 @@ public class BrokerController {
 
         if (result) {
             try {
-                //消息存取的核心接口初始化，提供put/get message接口，提供根据offset获取消息的接口
-                this.messageStore =
-                    new DefaultMessageStore(this.messageStoreConfig, this.brokerStatsManager, this.messageArrivingListener,
-                        this.brokerConfig);
+                //messageStore  消息存储模块  实现这个模块的线程都通过这个对象开启
+                this.messageStore = new DefaultMessageStore(this.messageStoreConfig, this.brokerStatsManager, this.messageArrivingListener, this.brokerConfig);
                 if (messageStoreConfig.isEnableDLegerCommitLog()) {
                     DLedgerRoleChangeHandler roleChangeHandler = new DLedgerRoleChangeHandler(this, (DefaultMessageStore) messageStore);
                     //roleChangeHandler>>这个玩意儿通过messageStore存储起来了
@@ -281,7 +287,7 @@ public class BrokerController {
         result = result && this.messageStore.load();
 
         if (result) {
-            //初始化netty server
+            //初始化netty server   监听端口
             this.remotingServer = new NettyRemotingServer(this.nettyServerConfig, this.clientHousekeepingService);
             NettyServerConfig fastConfig = (NettyServerConfig) this.nettyServerConfig.clone();
             //传说中的VIP channel，端口是broker端口-2（10909），不接收consumer的Pull请求
@@ -868,6 +874,18 @@ public class BrokerController {
         return this.brokerConfig.getBrokerIP1() + ":" + this.nettyServerConfig.getListenPort();
     }
 
+    /**
+     * messageStore
+     * remotingServer
+     * fastRemotingServer
+     * fileWatchService
+     * brokerOuterAPI
+     * pullRequestHoldService
+     * clientHousekeepingService
+     * filterServerManager
+     * brokerStatsManager
+     * brokerFastFailure
+     */
     public void start() throws Exception {
         if (this.messageStore != null) {
             //启动消息存储服务

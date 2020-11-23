@@ -20,12 +20,13 @@ public class RunningFlags {
 
     private static final int NOT_READABLE_BIT = 1;
 
+    //1乘以2的1一次方  2
     private static final int NOT_WRITEABLE_BIT = 1 << 1;
-
+    //1乘以2的2次方   4
     private static final int WRITE_LOGICS_QUEUE_ERROR_BIT = 1 << 2;
-
+    //1乘以2的3次方  8
     private static final int WRITE_INDEX_FILE_ERROR_BIT = 1 << 3;
-
+    //1乘以2的4次方  16
     private static final int DISK_FULL_BIT = 1 << 4;
 
     private volatile int flagBits = 0;
@@ -70,6 +71,10 @@ public class RunningFlags {
     }
 
     public boolean isWriteable() {
+        /**
+         * | 有一个为真即为真    & 两个都为真即为真
+         */
+        // ( 00000 & (00010 | 00100 | 01000 | 10000)
         if ((this.flagBits & (NOT_WRITEABLE_BIT | WRITE_LOGICS_QUEUE_ERROR_BIT | DISK_FULL_BIT | WRITE_INDEX_FILE_ERROR_BIT)) == 0) {
             return true;
         }
@@ -120,6 +125,7 @@ public class RunningFlags {
 
     public boolean getAndMakeDiskFull() {
         boolean result = !((this.flagBits & DISK_FULL_BIT) == DISK_FULL_BIT);
+        //|= 运算符和 += 这一类的运算符一样，拆解开就是 a = a | b；
         this.flagBits |= DISK_FULL_BIT;
         return result;
     }
