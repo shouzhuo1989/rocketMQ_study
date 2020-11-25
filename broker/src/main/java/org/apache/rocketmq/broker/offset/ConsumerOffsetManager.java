@@ -40,6 +40,10 @@ public class ConsumerOffsetManager extends ConfigManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private static final String TOPIC_GROUP_SEPARATOR = "@";
 
+    /**
+     * 以topic@group为key，{queueId,offset}为value
+     * 这里记录了一个消费者组对一个topic的消费情况，即该topic下每个queue的offset
+     */
     private ConcurrentMap<String/* topic@group */, ConcurrentMap<Integer, Long>> offsetTable =
         new ConcurrentHashMap<String, ConcurrentMap<Integer, Long>>(512);
 
