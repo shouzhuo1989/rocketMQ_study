@@ -122,6 +122,12 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
         AbstractTransactionalMessageCheckListener listener) {
         try {
             String topic = MixAll.RMQ_SYS_TRANS_HALF_TOPIC;
+            /**
+             * 去topicConfigManager中拿当前topic的配置，如果没有就创建一个
+             * 根据拿到的topicConfig创建MessageQueue
+             *
+             * ps：通过这个方法，我们可以知道在一个broker中，可以通过RMQ_SYS_TRANS_HALF_TOPIC，来获取它下面MessageQueue信息
+             */
             Set<MessageQueue> msgQueues = transactionalMessageBridge.fetchMessageQueues(topic);
             if (msgQueues == null || msgQueues.size() == 0) {
                 log.warn("The queue of topic is empty :" + topic);
@@ -130,7 +136,18 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
             log.debug("Check topic={}, queues={}", topic, msgQueues);
             for (MessageQueue messageQueue : msgQueues) {
                 long startTime = System.currentTimeMillis();
+                /**
+                 * 当前类有一个缓存opQueueMap，里面是当前messageQueue和opQueue的键值对
+                 *
+                 * ps：对于事务消息，RMQ_SYS_TRANS_HALF_TOPIC下的每一个messageQueue会对应RMQ_SYS_TRANS_OP_HALF_TOPIC下的一个messageQueue
+                 */
                 MessageQueue opQueue = getOpQueue(messageQueue);
+                /**
+                 * 去consumerOffsetManager中根据 group, topic, queueId查询Offset 或者
+                 * 去DefaultMessageStore中根据topic, queueId查询MinOffsetInQueue
+                 *
+                 *
+                 */
                 long halfOffset = transactionalMessageBridge.fetchConsumeOffset(messageQueue);
                 long opOffset = transactionalMessageBridge.fetchConsumeOffset(opQueue);
                 log.info("Before check, the queue={} msgOffset={} opOffset={}", messageQueue, halfOffset, opOffset);
@@ -142,6 +159,7 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
 
                 List<Long> doneOpOffset = new ArrayList<>();
                 HashMap<Long, Long> removeMap = new HashMap<>();
+                //fillOpRemoveMap这个方法的作用在于事务回查时过滤调不需要回查的消息 tag1
                 PullResult pullResult = fillOpRemoveMap(removeMap, opQueue, opOffset, halfOffset, doneOpOffset);
                 if (null == pullResult) {
                     log.error("The queue={} check msgOffset={} with opOffset={} failed, pullResult is null",
@@ -153,10 +171,12 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
                 long newOffset = halfOffset;
                 long i = halfOffset;
                 while (true) {
+                    //每个队列只回查一分钟
                     if (System.currentTimeMillis() - startTime > MAX_PROCESS_TIME_LIMIT) {
                         log.info("Queue={} process time reach max={}", messageQueue, MAX_PROCESS_TIME_LIMIT);
                         break;
                     }
+                    //tag1处的过滤就在这里实现
                     if (removeMap.containsKey(i)) {
                         log.info("Half offset {} has been committed/rolled back", i);
                         removeMap.remove(i);
@@ -172,6 +192,7 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
                                     messageQueue, getMessageNullCount, getResult.getPullResult());
                                 break;
                             } else {
+                                //OFFSET_ILLEGAL
                                 log.info("Illegal offset, the miss offset={} in={}, continue check={}, pull result={}",
                                     i, messageQueue, getMessageNullCount, getResult.getPullResult());
                                 i = getResult.getPullResult().getNextBeginOffset();
@@ -179,20 +200,22 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
                                 continue;
                             }
                         }
-
+                        //检查是否跳过这个msg
                         if (needDiscard(msgExt, transactionCheckMax) || needSkip(msgExt)) {
                             listener.resolveDiscardMsg(msgExt);
                             newOffset = i + 1;
                             i++;
                             continue;
                         }
+                        //当前消息的存储时间大于了当前队列开始check的时间，所以本次不回查，留到下次
                         if (msgExt.getStoreTimestamp() >= startTime) {
                             log.debug("Fresh stored. the miss offset={}, check it later, store={}", i,
                                 new Date(msgExt.getStoreTimestamp()));
                             break;
                         }
-
+                        //当前消息生产出来多久了
                         long valueOfCurrentMinusBorn = System.currentTimeMillis() - msgExt.getBornTimestamp();
+                        //配置事务超时时间
                         long checkImmunityTime = transactionTimeout;
                         String checkImmunityTimeStr = msgExt.getUserProperty(MessageConst.PROPERTY_CHECK_IMMUNITY_TIME_IN_SECONDS);
                         if (null != checkImmunityTimeStr) {
@@ -212,6 +235,12 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
                             }
                         }
                         List<MessageExt> opMsg = pullResult.getMsgFoundList();
+                        /**
+                         * 哪些情况需要回查？
+                         * 1、op队列中没有new msg，即从上一次消费完之后，op队列中没有再存入过消息，那么我们就看当前消息发过来是否已经超过6秒了；
+                         * 2、最后一个opmsg是在开始检查6秒后写入的，就是说在开始检查6秒后，当前消息的opmsg还没有写入，那明显需要回查
+                         * 3、当前消息的产生时间大于当前系统时间
+                         */
                         boolean isNeedCheck = (opMsg == null && valueOfCurrentMinusBorn > checkImmunityTime)
                             || (opMsg != null && (opMsg.get(opMsg.size() - 1).getBornTimestamp() - startTime > transactionTimeout))
                             || (valueOfCurrentMinusBorn <= -1);
@@ -270,16 +299,19 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
      */
     private PullResult fillOpRemoveMap(HashMap<Long, Long> removeMap,
         MessageQueue opQueue, long pullOffsetOfOp, long miniOffset, List<Long> doneOpOffset) {
+        //获取OpMsg
         PullResult pullResult = pullOpMsg(opQueue, pullOffsetOfOp, 32);
         if (null == pullResult) {
             return null;
         }
+        //OFFSET_ILLEGAL》offset非法 NO_MATCHED_MSG》没有匹配的消息
         if (pullResult.getPullStatus() == PullStatus.OFFSET_ILLEGAL
             || pullResult.getPullStatus() == PullStatus.NO_MATCHED_MSG) {
             log.warn("The miss op offset={} in queue={} is illegal, pullResult={}", pullOffsetOfOp, opQueue,
                 pullResult);
             transactionalMessageBridge.updateConsumeOffset(opQueue, pullResult.getNextBeginOffset());
             return pullResult;
+        //NO_NEW_MSG》没有消息
         } else if (pullResult.getPullStatus() == PullStatus.NO_NEW_MSG) {
             log.warn("The miss op offset={} in queue={} is NO_NEW_MSG, pullResult={}", pullOffsetOfOp, opQueue,
                 pullResult);
@@ -295,9 +327,22 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
             log.info("Topic: {} tags: {}, OpOffset: {}, HalfOffset: {}", opMessageExt.getTopic(),
                 opMessageExt.getTags(), opMessageExt.getQueueOffset(), queueOffset);
             if (TransactionalMessageUtil.REMOVETAG.equals(opMessageExt.getTags())) {
+                //当前op msg 对应的HalfOffset 小于 将要消费的最小的HalfOffset，换句话说就是当前op msg对应的half msg已经消费过了
+                /**
+                 * 对于事务状态确定的消息，会存一条half msg和op msg，对于没有确定的消息，只有一条half msg；
+                 * 发了三条消息，而且都commit了；这时 half msg 存了三条，对对应的offset为0，1，2；存了三条op msg，对应的offset为0，1，2，且各自对应的halfoffset为0，1，2
+                 * 第一次回查，miniOffset为0，所以removeMap中会存三条数据[{0,0},{1,1},{2,2}]
+                 * 接着再发一条事务状态未确定消息，这是half msg中多了一条，对应的offset为3
+                 * 现在再来一次回查，miniOffset为3，所以doneOpOffset会存三条数据[0,1,2]
+                 *
+                 * 总结：第一次回查：doneOpOffset为空  removeMap为[{0,0},{1,1},{2,2}]
+                 *      第二次回查：doneOpOffset为[0,1,2],removeMap为[]
+                 *      第三次回查：doneOpOffset为[0,1,2,3], removeMap为[]
+                 */
                 if (queueOffset < miniOffset) {
                     doneOpOffset.add(opMessageExt.getQueueOffset());
                 } else {
+                    //removeMap里面没有的，就是要回查的
                     removeMap.put(queueOffset, opMessageExt.getQueueOffset());
                 }
             } else {
