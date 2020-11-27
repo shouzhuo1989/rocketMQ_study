@@ -376,6 +376,7 @@ public class ConsumeQueue {
     }
 
     public long getMinOffsetInQueue() {
+        //0/20  0
         return this.minLogicOffset / CQ_STORE_UNIT_SIZE;
     }
 

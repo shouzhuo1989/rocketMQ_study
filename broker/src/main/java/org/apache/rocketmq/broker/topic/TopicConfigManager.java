@@ -229,6 +229,14 @@ public class TopicConfigManager extends ConfigManager {
         return topicConfig;
     }
 
+    /**
+     *
+     * @param topic
+     * @param clientDefaultTopicQueueNums  默认为1
+     * @param perm  默认为6
+     * @param topicSysFlag 默认为0
+     * @return
+     */
     public TopicConfig createTopicInSendMessageBackMethod(
         final String topic,
         final int clientDefaultTopicQueueNums,
@@ -257,6 +265,7 @@ public class TopicConfigManager extends ConfigManager {
                     this.topicConfigTable.put(topic, topicConfig);
                     createNew = true;
                     this.dataVersion.nextVersion();
+                    //持久化
                     this.persist();
                 } finally {
                     this.lockTopicConfigTable.unlock();
@@ -267,6 +276,7 @@ public class TopicConfigManager extends ConfigManager {
         }
 
         if (createNew) {
+            //todo 这个注册是干啥的？
             this.brokerController.registerBrokerAll(false, true, true);
         }
 

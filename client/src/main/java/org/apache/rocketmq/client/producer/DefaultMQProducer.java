@@ -97,7 +97,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      * Timeout for sending messages.
      * 发送消息超时时间
      */
-    private int sendMsgTimeout = 3000;
+    private int sendMsgTimeout = 30000;
 
     /**
      * Compress message body threshold, namely, message body larger than 4k will be compressed on default.

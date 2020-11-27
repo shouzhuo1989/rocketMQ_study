@@ -72,8 +72,14 @@ public class TransactionalMessageBridge {
     }
 
     public long fetchConsumeOffset(MessageQueue mq) {
+        /**
+         * TransactionalMessageUtil.buildConsumerGroup() = CID_RMQ_SYS_TRANS
+         *
+         * ps：在一个broker中，可以根据group、topic、queueID查询Offset
+         */
         long offset = brokerController.getConsumerOffsetManager().queryOffset(TransactionalMessageUtil.buildConsumerGroup(),
             mq.getTopic(), mq.getQueueId());
+        //返回-1说明当前Queue没有消费
         if (offset == -1) {
             offset = store.getMinOffsetInQueue(mq.getTopic(), mq.getQueueId());
         }
@@ -283,6 +289,7 @@ public class TransactionalMessageBridge {
     private TopicConfig selectTopicConfig(String topic) {
         TopicConfig topicConfig = brokerController.getTopicConfigManager().selectTopicConfig(topic);
         if (topicConfig == null) {
+            // PermName.PERM_WRITE | PermName.PERM_READ =6
             topicConfig = this.brokerController.getTopicConfigManager().createTopicInSendMessageBackMethod(
                 topic, 1, PermName.PERM_WRITE | PermName.PERM_READ, 0);
         }

@@ -194,15 +194,13 @@ public class MappedFileQueue {
 
     public MappedFile getLastMappedFile(final long startOffset, boolean needCreate) {
         long createOffset = -1;
-        //获取要写入的CommitLog文件对应的 MappedFile（实际上这就是最后一个commitlog文件）
         MappedFile mappedFileLast = getLastMappedFile();
-        //mappedFileLast 为空或者最后一个对象对应的文件已经写满，则创建一个新的文件（即新的 MapedFile 对象） ；
-        //计算出新文件的起始偏移量（起始偏移量就是文件名称）
+        //没有拿到最后一个文件
         if (mappedFileLast == null) {
             //计算这个要创建的commitlog文件的起始offset，这个offset也会被用作文件名的一部分
             createOffset = startOffset - (startOffset % this.mappedFileSize);
         }
-
+        //拿到最后一个文件了，但是文件已经写满
         if (mappedFileLast != null && mappedFileLast.isFull()) {
             createOffset = mappedFileLast.getFileFromOffset() + this.mappedFileSize;
         }

@@ -323,6 +323,11 @@ public class DefaultMQProducerImpl implements MQProducerInner {
     @Override
     public void checkTransactionState(final String addr, final MessageExt msg,
         final CheckTransactionStateRequestHeader header) {
+        System.out.println("处理事务查询请求start-----------------------");
+        System.out.println("addr:"+addr);
+        System.out.println("msg:"+msg.toString());
+        System.out.println("addr:"+header.toString());
+        System.out.println("处理事务查询请求end-----------------------");
         Runnable request = new Runnable() {
             private final String brokerAddr = addr;
             private final MessageExt message = msg;
@@ -397,6 +402,11 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                 }
 
                 try {
+                    System.out.println("向broker发送事务回查请求处理结果start--------------------");
+                    System.out.println("brokerAddr："+brokerAddr);
+                    System.out.println("thisHeader："+thisHeader);
+                    System.out.println("remark："+remark);
+                    System.out.println("向broker发送事务回查请求处理结果end--------------------");
                     DefaultMQProducerImpl.this.mQClientFactory.getMQClientAPIImpl().endTransactionOneway(brokerAddr, thisHeader, remark,
                         3000);
                 } catch (Exception e) {
@@ -1336,6 +1346,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         requestHeader.setTranStateTableOffset(sendResult.getQueueOffset());
         requestHeader.setMsgId(sendResult.getMsgId());
         String remark = localException != null ? ("executeLocalTransactionBranch exception: " + localException.toString()) : null;
+        System.out.println("发送事务结束消息，requestHeader："+requestHeader.toString());
         this.mQClientFactory.getMQClientAPIImpl().endTransactionOneway(brokerAddr, requestHeader, remark,
             this.defaultMQProducer.getSendMsgTimeout());
     }

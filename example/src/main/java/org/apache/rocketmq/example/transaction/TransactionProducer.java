@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 public class TransactionProducer {
     public static void main(String[] args) throws MQClientException, InterruptedException {
         TransactionListener transactionListener = new TransactionListenerImpl();
-        TransactionMQProducer producer = new TransactionMQProducer("transaction_producer_group");
+        TransactionMQProducer producer = new TransactionMQProducer("transaction_producer_group_kele");
         producer.setNamesrvAddr("127.0.0.1:9876");
         ExecutorService executorService = new ThreadPoolExecutor(2, 5, 100, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(2000), new ThreadFactory() {
             @Override
@@ -58,18 +58,18 @@ public class TransactionProducer {
         producer.start();
 
         String[] tags = new String[] {"TagA", "TagB", "TagC", "TagD", "TagE"};
-      //  for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < 2; i++) {
             try {
                 Message msg =
-                    new Message("TopicTest1234", tags[1 % tags.length], "KEY" + 1,
-                        ("Hello RocketMQ " + 1).getBytes(RemotingHelper.DEFAULT_CHARSET));
+                    new Message("kele_1", tags[i % tags.length], "KEY" + i,
+                        ("Hello RocketMQ " + i).getBytes(RemotingHelper.DEFAULT_CHARSET));
                 SendResult sendResult = producer.sendMessageInTransaction(msg, null);
                 System.out.printf("%s%n", sendResult);
                 Thread.sleep(10);
             } catch (MQClientException | UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
-      //  }
+      }
 
         for (int i = 0; i < 100000; i++) {
             Thread.sleep(1000);

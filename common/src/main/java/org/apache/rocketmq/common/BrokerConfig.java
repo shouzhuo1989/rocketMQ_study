@@ -40,7 +40,7 @@ public class BrokerConfig {
     private String brokerClusterName = "DefaultCluster";
     @ImportantField
     private long brokerId = MixAll.MASTER_ID;
-    private int brokerPermission = PermName.PERM_READ | PermName.PERM_WRITE;
+    private int brokerPermission = PermName.PERM_READ | PermName.PERM_WRITE;  //6
     private int defaultTopicQueueNums = 8;
     @ImportantField
     private boolean autoCreateTopicEnable = true;
