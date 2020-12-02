@@ -238,9 +238,28 @@ public class MappedFile extends ReferenceResource {
         int currentPos = this.wrotePosition.get();
         //当前文件还有空间，可以继续写
         if (currentPos < this.fileSize) {
-            //capacity  limit   position
+
+            /**
+             * Creates a new byte buffer whose content is a shared subsequence of this buffer's content.
+             *
+             * The content of the new buffer will start at this buffer's current position.  Changes to this buffer's content will be visible in the new buffer, and vice versa; the two buffers' position, limit, and mark values will be independent.
+             *
+             * The new buffer's position will be zero, its capacity and its limit will be the number of bytes remaining in this buffer, and its mark will be undefined.  The new buffer will be direct if, and only if, this buffer is direct, and it will be read-only if, and only if, this buffer is read-only.
+             *
+             *创建一个新的字节缓冲区，其内容为该缓冲区内容的共享子序列。
+             *
+             *新缓冲区的内容将从该缓冲区的当前位置开始。对这个缓冲区内容的更改将在新的缓冲区中可见，反之亦然; 两个缓冲区的位置、限制和标记值将是独立的。
+             *
+             * 新缓冲区的位置将为零，其容量和限制将是该缓冲区中剩余的字节数，并且其标记将未定义。当且仅当该缓冲区为直接缓冲区时，新缓冲区将为直接缓冲区，当且仅当该缓冲区为只读缓冲区时，新缓冲区将为只读缓冲区。
+             *
+             *todo 这里为什么不直接在writeBuffer或者mappedByteBuffer中写，又重新拿一个buffer出来？
+             *
+             *  0   limit-position
+             *
+             *  向byteBuffer中put的时候，writeBuffer的position是不变的；当writeBuffer get的时候，position才会变
+             */
             ByteBuffer byteBuffer = writeBuffer != null ? writeBuffer.slice() : this.mappedByteBuffer.slice();
-            //把byteBuffer的指针移动到mappedFile的写指针位置   所谓指针就是第几个字节
+            //
             byteBuffer.position(currentPos);
             AppendMessageResult result;
             if (messageExt instanceof MessageExtBrokerInner) {
@@ -310,12 +329,54 @@ public class MappedFile extends ReferenceResource {
         if (this.isAbleToFlush(flushLeastPages)) {
             if (this.hold()) {
                 int value = getReadPosition();
-
                 try {
                     //We only append data to fileChannel or mappedByteBuffer, never both.
                     if (writeBuffer != null || this.fileChannel.position() != 0) {
+                        /**
+                         * Forces any updates to this channel's file to be written to the storage device that contains it
+                         *
+                         * If this channel's file resides on a local storage device then when this method returns it is guaranteed that all changes made to the file since this channel was created, or since this method was last invoked,will have been written to that device.  This is useful for ensuring that critical information is not lost in the event of a system crash.
+                         *
+                         * If the file does not reside on a local device then no such guarantee is made.
+                         *
+                         * The metaData parameter can be used to limit the number of I/O operations that this method is required to perform.  Passing false for this parameter indicates that only updates to the file's content need be written to storage; passing true indicates that updates to both the file's content and metadata must be written, which generally requires at least one more I/O operation.Whether this parameter actually has any effect is dependent upon the underlying operating system and is therefore unspecified.
+                         *
+                         *
+                         *  Invoking this method may cause an I/O operation to occur even if the channel was only opened for reading.  Some operating systems, for example, maintain a last-access time as part of a file's metadata, and this time is updated whenever the file is read.  Whether or not this is actually done is system-dependent and is therefore unspecified.
+                         *
+                         *
+                         * This method is only guaranteed to force changes that were made to this channel's file via the methods defined in this class.  It may or may not force changes that were made by modifying the content of a {@link MappedByteBuffer <i>mapped byte buffer</i>} obtained by invoking the {@link #map map} method.  Invoking the {@link MappedByteBuffer#force force} method of the mapped byte buffer will force changes made to the buffer's content to be written.
+                         *
+                         * 强制将对此通道文件的任何更新写入包含该通道文件的存储设备
+                         *
+                         * 如果这个通道的文件驻留在本地存储设备上，那么当这个方法返回时，它保证自创建这个通道以来，或者自上次调用这个方法以来，对这个文件所做的所有更改都将被写入到这个设备上。这对于确保关键信息不会在系统崩溃时丢失非常有用。
+                         *
+                         * 如果文件不驻留在本地设备上，则不作此保证。
+                         *
+                         * metaData 参数可用于限制此方法需要执行的 I/O 操作的数量。对这个参数传递 false 表示只需要将对文件内容的更新写入存储; 传递 true 表示必须同时写入对文件内容和元数据的更新，这通常需要至少多一个 I/O 操作。此参数是否实际上具有任何影响取决于底层操作系统，因此未指定。
+                         *
+                         * 调用此方法可能会导致出现 I/O 操作，即使通道只是为了读取而打开。例如，有些操作系统将最后一次访问时间作为文件元数据的一部分，并且这一时间在文件被读取时更新。是否实际执行此操作取决于系统，因此未指定。
+                         *
+                         * 此方法只能保证通过在此类中定义的方法对此通道的文件进行的更改。对mapped byte buffer的content做的修改可能也可能不会强制修改
+                         */
                         this.fileChannel.force(false);
                     } else {
+                        /**
+                         *  Forces any changes made to this buffer's content to be written to the storage device containing the mapped file.
+                         *
+                         * If the file mapped into this buffer resides on a local storage device then when this method returns it is guaranteed that all changes made to the buffer since it was created, or since this method was last invoked, will have been written to that device.
+                         *
+                         * If this buffer was not mapped in read/write mode ({@link
+                         * java.nio.channels.FileChannel.MapMode#READ_WRITE}) then invoking this method has no effect.
+                         *
+                         * 强制将对此缓冲区内容所做的任何更改写入包含映射文件的存储设备。
+                         *
+                         * 如果映射到这个缓冲区的文件驻留在本地存储设备上，那么当这个方法返回时，它保证自创建缓冲区以来，或者自上次调用这个方法以来，对该缓冲区所做的所有更改都将被写入该设备。
+                         *
+                         * 如果该缓冲区没有在读/写模式下映射({@link
+                         *
+                         * 然后调用这个方法没有任何效果。
+                         */
                         this.mappedByteBuffer.force();
                     }
                 } catch (Throwable e) {

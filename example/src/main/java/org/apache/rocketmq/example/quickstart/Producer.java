@@ -68,6 +68,9 @@ public class Producer {
                     ("Hello RocketMQ " + i).getBytes(RemotingHelper.DEFAULT_CHARSET) /* Message body */
                 );
 
+                // 设置延时等级3,这个消息将在10s之后发送(现在只支持固定的几个时间,详看delayTimeLevel)
+                msg.setDelayTimeLevel(3);
+
                 /*
                  * Call send message to deliver message to one of brokers.
                  */
