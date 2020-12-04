@@ -239,7 +239,10 @@ public abstract class RebalanceImpl {
         return subscriptionInner;
     }
 
-
+    /**
+     *
+     * 第一步  负载均衡，生产PullRequest，添加到pullRequestQueue中    tag:xflc
+     */
     private void rebalanceByTopic(final String topic, final boolean isOrder) {
         switch (messageModel) {
             case BROADCASTING: {

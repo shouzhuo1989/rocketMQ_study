@@ -289,6 +289,7 @@ public abstract class NettyRemotingAbstract {
             responseTable.remove(opaque);
 
             if (responseFuture.getInvokeCallback() != null) {
+                //第四步 处理响应  tag：xflc
                 executeInvokeCallback(responseFuture);
             } else {
                 responseFuture.putResponse(cmd);
@@ -458,6 +459,7 @@ public abstract class NettyRemotingAbstract {
             }
 
             final ResponseFuture responseFuture = new ResponseFuture(channel, opaque, timeoutMillis - costTime, invokeCallback, once);
+            //第三步  这里不会等到broker处理完请求返回数据，而是把响应对象（responseFuture）放到responseTable中  tag：xflc
             this.responseTable.put(opaque, responseFuture);
             try {
                 channel.writeAndFlush(request).addListener(new ChannelFutureListener() {
