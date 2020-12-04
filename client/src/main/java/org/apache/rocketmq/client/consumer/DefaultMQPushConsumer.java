@@ -80,6 +80,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
 
     /**
      * Message model defines the way how messages are delivered to each consumer clients.
+     * 消息模型定义了如何将消息传递给每个消费者客户端。
      * </p>
      *
      * RocketMQ supports two message models: clustering and broadcasting. If clustering is set, consumer clients with
@@ -102,24 +103,31 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
      * <code>CONSUME_FROM_LAST_OFFSET</code>: consumer clients pick up where it stopped previously.
      * If it were a newly booting up consumer client, according aging of the consumer group, there are two
      * cases:
+     消费者客户会从它之前停止的地方重新开始。
+     如果它是一个新启动的消费者客户端，根据消费者群体的老龄化,有两种情况
      * <ol>
      * <li>
      * if the consumer group is created so recently that the earliest message being subscribed has yet
      * expired, which means the consumer group represents a lately launched business, consuming will
      * start from the very beginning;
+     * 如果消费者群体是最近创建的，最早订阅的消息已经过期，这意味着消费者群体代表一个最近发起的业务，消费将从一开始就开始;
      * </li>
      * <li>
      * if the earliest message being subscribed has expired, consuming will start from the latest
      * messages, meaning messages born prior to the booting timestamp would be ignored.
+     *
+     如果最早订阅的消息已过期，则消费将从最新的消息开始，这意味着在启动时间戳之前生成的消息将被忽略。
      * </li>
      * </ol>
      * </li>
      * <li>
      * <code>CONSUME_FROM_FIRST_OFFSET</code>: Consumer client will start from earliest messages available.
+     * 客户端将从可用的最早消息开始。
      * </li>
      * <li>
      * <code>CONSUME_FROM_TIMESTAMP</code>: Consumer client will start from specified timestamp, which means
      * messages born prior to {@link #consumeTimestamp} will be ignored
+     * 使用者客户端将从指定的时间戳开始，这意味着在{@link # consumetimestamp }之前生成的消息将被忽略
      * </li>
      * </ul>
      */
@@ -272,6 +280,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
      * @param consumerGroup Consumer group.
      */
     public DefaultMQPushConsumer(final String consumerGroup) {
+        //默认负载均衡策略为AllocateMessageQueueAveragely
         this(null, consumerGroup, null, new AllocateMessageQueueAveragely());
     }
 

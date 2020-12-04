@@ -25,43 +25,35 @@ import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.consumer.ConsumeFromWhere;
 import org.apache.rocketmq.common.message.MessageExt;
 
+
 /**
- * This example shows how to subscribe and consume messages using providing {@link DefaultMQPushConsumer}.
+ * 关于消费者的一些问题：
+ * 1 消息来了，是broker告诉consumer呢，还是consumer去问broker呢？  后面的问题假设是后者
+ * 2 有多个broker，consumer怎么决定去问哪个呢？
+ * 3 从namesvr上获取了broker信息，但去问的时候，这个broker已经挂了？
+ * 4、因为broker有主有从，怎么决定从哪个上面消费呢？
+ * 5、消费有两种模式，第一种是一个消费者组中的消费者消费全量的订阅的消息，第二中是一条消息一旦被一个消费者组中一个消费者消费了，那么就不能被其他消费者消费了;两种分别是如何实现的？
+ * 6、消费者需要向broker注册组信息，这个注册是向所有broker注册吗？
+ * 7 如何标记一个消息已经被消费过了？
+ *
  */
 public class Consumer {
 
     public static void main(String[] args) throws InterruptedException, MQClientException {
 
-        /*
-         * Instantiate with specified consumer group name.
-         */
-        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("please_rename_unique_group_name_4");
 
-        /*
-         * Specify name server addresses.
-         * <p/>
-         *
-         * Alternatively, you may specify name server addresses via exporting environmental variable: NAMESRV_ADDR
-         * <pre>
-         * {@code
-         * consumer.setNamesrvAddr("name-server1-ip:9876;name-server2-ip:9876");
-         * }
-         * </pre>
-         */
-        consumer.setNamesrvAddr("127.0.0.1:9876");
-        /*
-         * Specify where to start in case the specified consumer group is a brand new one.
-         */
-        consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);
+        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("consumer_group_kele");
 
-        /*
-         * Subscribe one more more topics to consume.
-         */
-        consumer.subscribe("RMQ_SYS_TRANS_HALF_TOPIC", "*");
+        consumer.setNamesrvAddr("192.168.1.33:9876");
+        //consumer.setUnitName();
 
-        /*
-         *  Register callback to execute on arrival of messages fetched from brokers.
+        //consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);
+
+        /**
+         * 假如订阅多个topic的话，就调用subscribe方法多次
          */
+        consumer.subscribe("topic_kele", "*");
+
         consumer.registerMessageListener(new MessageListenerConcurrently() {
 
             @Override
@@ -72,9 +64,6 @@ public class Consumer {
             }
         });
 
-        /*
-         *  Launch the consumer instance.
-         */
         consumer.start();
 
         System.out.printf("Consumer Started.%n");

@@ -243,13 +243,29 @@ public class MQClientInstance {
                     if (null == this.clientConfig.getNamesrvAddr()) {
                         this.mQClientAPIImpl.fetchNameServerAddr();
                     }
-
+                    //启动netty client
                     this.mQClientAPIImpl.start();
 
+                    /**
+                     * 开启以下定时任务：
+                     * 1 fetchNameServerAddr
+                     * 2 updateTopicRouteInfoFromNameServer
+                     * 3 sendHeartbeatToAllBrokerWithLock
+                     * 4 persistAllConsumerOffset
+                     * 5 adjustThreadPool
+                     */
                     this.startScheduledTask();
-                   // todo  producer为什么也启动这个？
+                    /**
+                     *  todo  producer为什么也启动这个？
+                     *
+                     *  执行拉去请求   关注请求从哪里来  处理完之后的数据到哪里去
+                     */
                     this.pullMessageService.start();
-                    //todo  producer为什么也启动这个？
+                    /**
+                     * todo  producer为什么也启动这个？
+                     *
+                     * 负载均衡
+                     */
                     this.rebalanceService.start();
                     //todo MQClientInstance内部为什么要启动一个defaultMQProducer，而且还向broker发送心跳？
                     this.defaultMQProducer.getDefaultMQProducerImpl().start(false);
@@ -571,6 +587,7 @@ public class MQClientInstance {
     private void sendHeartbeatToAllBroker() {
         /**
          * 假如是生产者，heartbeatData中有clientid groupName
+         * 这个heartbeatData中包括了使用当前MQClientInstance的所有consumer
          */
         final HeartbeatData heartbeatData = this.prepareHeartbeatData();
         final boolean producerEmpty = heartbeatData.getProducerDataSet().isEmpty();
@@ -579,8 +596,9 @@ public class MQClientInstance {
             log.warn("sending heartbeat, but no consumer and no producer");
             return;
         }
-
+        // brokerAddrTable中的数据updateTopicRouteInfoFromNameServer时候会放进去
         if (!this.brokerAddrTable.isEmpty()) {
+            //记录发送心跳的次数
             long times = this.sendHeartbeatTimesTotal.getAndIncrement();
             Iterator<Entry<String, HashMap<Long, String>>> it = this.brokerAddrTable.entrySet().iterator();
             while (it.hasNext()) {
@@ -736,7 +754,9 @@ public class MQClientInstance {
         // clientID
         heartbeatData.setClientID(this.clientId);
 
-        // Consumer
+        /**
+         * DefaultMQPushConsumerImpl start的时候会注册consumer
+         */
         for (Map.Entry<String, MQConsumerInner> entry : this.consumerTable.entrySet()) {
             MQConsumerInner impl = entry.getValue();
             if (impl != null) {

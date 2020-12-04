@@ -51,9 +51,7 @@ public class MQClientManager {
         MQClientInstance instance = this.factoryTable.get(clientId);
         if (null == instance) {
             /**
-             * 为什么这里要重新构建一个ClientConfig对象？
-             *
-             *
+             *todo  为什么这里要重新构建一个ClientConfig对象？
              */
             instance =
                 new MQClientInstance(clientConfig.cloneClientConfig(),

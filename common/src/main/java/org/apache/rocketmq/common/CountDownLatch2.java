@@ -117,12 +117,13 @@ public class CountDownLatch2 {
     /**
      * Decrements the count of the latch, releasing all waiting threads if
      * the count reaches zero.
-     *
+     递减闩锁的计数，如果计数达到零，则释放所有等待的线程。
      * <p>If the current count is greater than zero then it is decremented.
      * If the new count is zero then all waiting threads are re-enabled for
      * thread scheduling purposes.
-     *
+     如果当前计数大于零，那么它将被递减。如果新计数为零，那么为了进行线程调度，将重新启用所有等待线程。
      * <p>If the current count equals zero then nothing happens.
+     * 如果当前的计数等于零，那么什么也不会发生。
      */
     public void countDown() {
         sync.releaseShared(1);

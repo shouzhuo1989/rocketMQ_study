@@ -565,9 +565,8 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
     }
 
     /**
-     * 如何理清代码实现和逻辑设计的关系？
-     *
-     * 我们在阅读代码的时候，采取的是一种线性思维，而一个类的设计是产生与面中的
+     * 启动一个consumer就是启动了一些线程，然后初始化一些数据;无论是以单独的一个进程去做，还是说嵌在其他进程中，都没有关系;
+     * 初始化数据意味着在jvm内存里面生产一些数据，然后把引用给给到线程;如果一个引用被多个线程持有，那么这个对象就是线程共享的
      *
      */
     public synchronized void start() throws MQClientException {
@@ -592,9 +591,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                 this.rebalanceImpl.setAllocateMessageQueueStrategy(this.defaultMQPushConsumer.getAllocateMessageQueueStrategy());
                 this.rebalanceImpl.setmQClientFactory(this.mQClientFactory);
 
-                this.pullAPIWrapper = new PullAPIWrapper(
-                    mQClientFactory,
-                    this.defaultMQPushConsumer.getConsumerGroup(), isUnitMode());
+                this.pullAPIWrapper = new PullAPIWrapper(mQClientFactory, this.defaultMQPushConsumer.getConsumerGroup(), isUnitMode());
                 this.pullAPIWrapper.registerFilterMessageHook(filterMessageHookList);
 
                 if (this.defaultMQPushConsumer.getOffsetStore() != null) {
@@ -612,8 +609,10 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                     }
                     this.defaultMQPushConsumer.setOffsetStore(this.offsetStore);
                 }
+                //RemoteBrokerOffsetStore未实现
                 this.offsetStore.load();
 
+                //todo 这两种Listener有什么不同？
                 if (this.getMessageListenerInner() instanceof MessageListenerOrderly) {
                     this.consumeOrderly = true;
                     this.consumeMessageService =
@@ -624,8 +623,10 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                         new ConsumeMessageConcurrentlyService(this, (MessageListenerConcurrently) this.getMessageListenerInner());
                 }
 
+                //开启一个定时任务，每15分钟清理一次过时的消息
                 this.consumeMessageService.start();
 
+                //
                 boolean registerOK = mQClientFactory.registerConsumer(this.defaultMQPushConsumer.getConsumerGroup(), this);
                 if (!registerOK) {
                     this.serviceState = ServiceState.CREATE_JUST;

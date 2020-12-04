@@ -55,10 +55,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
-import org.apache.rocketmq.remoting.ChannelEventListener;
-import org.apache.rocketmq.remoting.InvokeCallback;
-import org.apache.rocketmq.remoting.RPCHook;
-import org.apache.rocketmq.remoting.RemotingClient;
+import org.apache.rocketmq.remoting.*;
 import org.apache.rocketmq.remoting.common.Pair;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.apache.rocketmq.remoting.common.RemotingUtil;
@@ -413,7 +410,6 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
     private Channel getAndCreateNameserverChannel() throws InterruptedException {
         String addr = this.namesrvAddrChoosed.get();
         if (addr != null) {
-            //从缓存中拿channel  缓存结构：ConcurrentMap<String /* addr */, ChannelWrapper>
             ChannelWrapper cw = this.channelTables.get(addr);
             if (cw != null && cw.isOK()) {
                 return cw.getChannel();
@@ -531,7 +527,14 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                 if (timeoutMillis < costTime) {
                     throw new RemotingTooMuchRequestException("invokeAsync call timeout");
                 }
+
+                CommandCustomHeader commandCustomHeader = request.readCustomHeader();
+                System.out.printf(commandCustomHeader.toString());
+                System.out.printf("\n");
+                System.out.printf(request.toString());
+                System.out.printf("\n");
                 this.invokeAsyncImpl(channel, request, timeoutMillis - costTime, invokeCallback);
+
             } catch (RemotingSendRequestException e) {
                 log.warn("invokeAsync: send request exception, so close the channel[{}]", addr);
                 this.closeChannel(addr, channel);

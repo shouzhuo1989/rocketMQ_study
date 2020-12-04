@@ -530,8 +530,9 @@ public class RemotingCommand {
     public String toString() {
         return "RemotingCommand [code=" + code + ", language=" + language + ", version=" + version + ", opaque=" + opaque + ", flag(B)="
             + Integer.toBinaryString(flag) + ", remark=" + remark + ", extFields=" + extFields + ", serializeTypeCurrentRPC="
-            + serializeTypeCurrentRPC + "]";
+            + serializeTypeCurrentRPC +","+ "]";
     }
+
 
     public SerializeType getSerializeTypeCurrentRPC() {
         return serializeTypeCurrentRPC;

@@ -528,7 +528,7 @@ public class DefaultMessageStore implements MessageStore {
      * @param group Consumer group that launches this query. 消费组名称
      * @param topic Topic to query. topic名称
      * @param queueId Queue ID to query. 队列id
-     * @param offset Logical offset to start from. 待拉取偏移量
+     * @param offset Logical offset to start from. 待拉取偏移量  queueOffset
      * @param maxMsgNums Maximum count of messages to query. 最大拉取数量
      * @param messageFilter Message filter used to screen desired messages. 消息过滤器
      * @return
@@ -554,9 +554,11 @@ public class DefaultMessageStore implements MessageStore {
         long maxOffset = 0;
 
         GetMessageResult getResult = new GetMessageResult();
-
+        //最大offset
         final long maxOffsetPy = this.commitLog.getMaxOffset();
-
+        /**
+         * 当前broker只需要记下 自己这里的topic的消费进度  针对每一个consumer group
+         */
         ConsumeQueue consumeQueue = findConsumeQueue(topic, queueId);
         if (consumeQueue != null) {
             minOffset = consumeQueue.getMinOffsetInQueue();
@@ -588,12 +590,16 @@ public class DefaultMessageStore implements MessageStore {
                         long maxPhyOffsetPulling = 0;
 
                         int i = 0;
+                        //32*20 = 640
                         final int maxFilterMessageCount = Math.max(16000, maxMsgNums * ConsumeQueue.CQ_STORE_UNIT_SIZE);
                         final boolean diskFallRecorded = this.messageStoreConfig.isDiskFallRecorded();
                         ConsumeQueueExt.CqExtUnit cqExtUnit = new ConsumeQueueExt.CqExtUnit();
                         for (; i < bufferConsumeQueue.getSize() && i < maxFilterMessageCount; i += ConsumeQueue.CQ_STORE_UNIT_SIZE) {
+                            //读了八个字节
                             long offsetPy = bufferConsumeQueue.getByteBuffer().getLong();
+                            //读了四个字节 消息长度、
                             int sizePy = bufferConsumeQueue.getByteBuffer().getInt();
+                            //接着读八个字节 tag hashcode
                             long tagsCode = bufferConsumeQueue.getByteBuffer().getLong();
 
                             maxPhyOffsetPulling = offsetPy;
@@ -664,7 +670,7 @@ public class DefaultMessageStore implements MessageStore {
                         }
 
                         nextBeginOffset = offset + (i / ConsumeQueue.CQ_STORE_UNIT_SIZE);
-
+                        //commitlog中已经存储的消息的最大offset -  现在要拉拉取的消息的
                         long diff = maxOffsetPy - maxPhyOffsetPulling;
                         long memory = (long) (StoreUtil.TOTAL_PHYSICAL_MEMORY_SIZE
                             * (this.messageStoreConfig.getAccessMessageInMemoryMaxRatio() / 100.0));
