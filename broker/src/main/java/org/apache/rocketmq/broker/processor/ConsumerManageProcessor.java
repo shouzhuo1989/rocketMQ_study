@@ -75,10 +75,22 @@ public class ConsumerManageProcessor implements NettyRequestProcessor {
             (GetConsumerListByGroupRequestHeader) request
                 .decodeCommandCustomHeader(GetConsumerListByGroupRequestHeader.class);
 
+
+        /**
+         * 一个消费者组      客户端id
+         *
+         * 当一个客户端中只有一个消费者的时候，那么客户端id就相当于消费者id
+         *
+         *
+         *
+         */
         ConsumerGroupInfo consumerGroupInfo =
             this.brokerController.getConsumerManager().getConsumerGroupInfo(
                 requestHeader.getConsumerGroup());
         if (consumerGroupInfo != null) {
+            /**
+             * 这些MQclient上有当前ConsumerGroup
+             */
             List<String> clientIds = consumerGroupInfo.getAllClientId();
             if (!clientIds.isEmpty()) {
                 GetConsumerListByGroupResponseBody body = new GetConsumerListByGroupResponseBody();

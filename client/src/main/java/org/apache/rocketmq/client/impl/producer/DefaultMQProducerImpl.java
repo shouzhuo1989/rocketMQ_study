@@ -189,7 +189,10 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                 this.serviceState = ServiceState.START_FAILED;
                 //主要是对入参producerGroup的一些检查
                 this.checkConfig();
-                //假如没有设置参数{rocketmq.client.name}，则{org.apache.rocketmq.client.ClientConfig.instanceName}的值更新成pid
+                /**
+                 * 生产者组不是MixAll.CLIENT_INNER_PRODUCER_GROUP，并且没有设置参数{rocketmq.client.name}
+                 * 则{org.apache.rocketmq.client.ClientConfig.instanceName}的值更新成pid
+                 */
                 if (!this.defaultMQProducer.getProducerGroup().equals(MixAll.CLIENT_INNER_PRODUCER_GROUP)) {
                     this.defaultMQProducer.changeInstanceNameToPID();
                 }
@@ -572,6 +575,9 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         if (topicPublishInfo != null && topicPublishInfo.ok()) {
             //获取topic信息成功
             boolean callTimeout = false;
+            /**
+             * 哪个broker的哪个topic下的哪个queue
+             */
             MessageQueue mq = null;
             Exception exception = null;
             SendResult sendResult = null;
@@ -811,6 +817,9 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                 }
 
                 SendMessageRequestHeader requestHeader = new SendMessageRequestHeader();
+                /**
+                 * 请求头中有 ProducerGroup
+                 */
                 requestHeader.setProducerGroup(this.defaultMQProducer.getProducerGroup());
                 requestHeader.setTopic(msg.getTopic());
                 requestHeader.setDefaultTopic(this.defaultMQProducer.getCreateTopicKey());

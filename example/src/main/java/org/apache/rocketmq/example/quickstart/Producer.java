@@ -25,6 +25,13 @@ import org.apache.rocketmq.remoting.common.RemotingHelper;
 
 /**
  * This class demonstrates how to send messages to brokers using provided {@link DefaultMQProducer}.
+ *
+ * 1、发送消息的时候需要指定：生产者组  nameServer地址
+ *
+ * 2、我们启动了一个应用，主要做以下几件事情：
+ *      --启动一些线程
+ *      --初始化数据，就是new一些对象，然后建立起他们之间的关联关系
+ *      --监听一些端口
  */
 public class Producer {
     public static void main(String[] args) throws MQClientException, InterruptedException {
@@ -69,7 +76,7 @@ public class Producer {
                 );
 
                 // 设置延时等级3,这个消息将在10s之后发送(现在只支持固定的几个时间,详看delayTimeLevel)
-                msg.setDelayTimeLevel(3);
+                //msg.setDelayTimeLevel(3);
 
                 /*
                  * Call send message to deliver message to one of brokers.

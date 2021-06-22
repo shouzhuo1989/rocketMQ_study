@@ -37,6 +37,10 @@ import org.apache.rocketmq.common.message.MessageExt;
  * 7 如何标记一个消息已经被消费过了？
  *
  */
+
+/**
+ * 消费者启动的时候需要指定：消费者组、nameServer、订阅的topic(可以订阅多个topic)
+ */
 public class Consumer {
 
     public static void main(String[] args) throws InterruptedException, MQClientException {
@@ -44,7 +48,7 @@ public class Consumer {
 
         DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("consumer_group_kele");
 
-        consumer.setNamesrvAddr("192.168.1.33:9876");
+        consumer.setNamesrvAddr("127.0.0.1:9876");
         //consumer.setUnitName();
 
         //consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);

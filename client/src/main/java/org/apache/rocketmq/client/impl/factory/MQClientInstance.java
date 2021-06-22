@@ -931,6 +931,9 @@ public class MQClientInstance {
             return false;
         }
 
+        /**
+         * mq客户端端会维护一个map，里面是消费者组和消费者的对应关系
+         */
         MQConsumerInner prev = this.consumerTable.putIfAbsent(group, consumer);
         if (prev != null) {
             log.warn("the consumer group[" + group + "] exist already.");
@@ -994,6 +997,10 @@ public class MQClientInstance {
         if (null == group || null == producer) {
             return false;
         }
+        /**
+         * 一个mq客户端会维护一个map，里面是生产者组和生产者的对应关系
+         * 就是说一个mq客户端中有可能会有多个生产者
+         */
         MQProducerInner prev = this.producerTable.putIfAbsent(group, producer);
         if (prev != null) {
             log.warn("the producer group[{}] exist already.", group);
@@ -1032,6 +1039,10 @@ public class MQClientInstance {
 
     public void doRebalance() {
         //todo consumerTable里面的数据是什么时候进去的？
+        /**
+         * 一个mq客户端中可以有多个consumer，但是每个consumer必须属于不同的consumerGroup
+         * 每个consumer有RebalanceImpl模块，实现负载均衡功能
+         */
         for (Map.Entry<String, MQConsumerInner> entry : this.consumerTable.entrySet()) {
             MQConsumerInner impl = entry.getValue();
             if (impl != null) {
@@ -1132,7 +1143,9 @@ public class MQClientInstance {
     }
 
     public List<String> findConsumerIdList(final String topic, final String group) {
-        //根据topic获取broker地址
+        /**
+         * 根据topic可以获取到多个broker地址，这里通过一个算法返回其中一个
+         */
         String brokerAddr = this.findBrokerAddrByTopic(topic);
         if (null == brokerAddr) {
             this.updateTopicRouteInfoFromNameServer(topic);

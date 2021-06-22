@@ -25,10 +25,26 @@ import java.util.Set;
 import org.apache.rocketmq.common.consumer.ConsumeFromWhere;
 
 public class ConsumerData {
+    /**
+     * 哪个消费者组
+     */
     private String groupName;
+    /**
+     * 消费者类型
+     */
     private ConsumeType consumeType;
+    /**
+     * 消息模式
+     */
     private MessageModel messageModel;
+    /**
+     * 从哪里消费
+     */
     private ConsumeFromWhere consumeFromWhere;
+
+    /**
+     * 订阅信息
+     */
     private Set<SubscriptionData> subscriptionDataSet = new HashSet<SubscriptionData>();
     private boolean unitMode;
 

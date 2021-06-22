@@ -99,6 +99,9 @@ public class ClientManageProcessor implements NettyRequestProcessor {
                     PermName.PERM_WRITE | PermName.PERM_READ, topicSysFlag);
             }
 
+            /**
+             * 一个consumer注册一次
+             */
             boolean changed = this.brokerController.getConsumerManager().registerConsumer(
                 data.getGroupName(),
                 clientChannelInfo,

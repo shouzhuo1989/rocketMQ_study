@@ -220,6 +220,9 @@ public abstract class RebalanceImpl {
         //todo  subscriptionInner中的数据是什么时候进去的？
         Map<String, SubscriptionData> subTable = this.getSubscriptionInner();
         if (subTable != null) {
+            /**
+             * 当前消费者可能订阅多个topic，所以需要一个topic一个topic去负载均衡
+             */
             for (final Map.Entry<String, SubscriptionData> entry : subTable.entrySet()) {
                 final String topic = entry.getKey();
                 try {
@@ -265,7 +268,15 @@ public abstract class RebalanceImpl {
             case CLUSTERING: {
                 // 一个consumerGroup中consumer平分一个topic中数据
                 // 所有MessageQueue的信息可以通过定时从namesvr上拉取 拉取的时候如果master上没有拉取成功，就去slave上
+
+                /**
+                 * 根据topic获取MessageQueue分布情况：比如说 一个topic下有十个队列  现在有三个master  那么这三个master，每个上面会有十个队列中的若干
+                 *
+                 */
                 Set<MessageQueue> mqSet = this.topicSubscribeInfoTable.get(topic);
+                /**
+                 * 这里拿到的是clientid，就是说在这些client上有当前消费者组
+                 */
                 List<String> cidAll = this.mQClientFactory.findConsumerIdList(topic, consumerGroup);
                 if (null == mqSet) {
                     if (!topic.startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) {
@@ -278,6 +289,10 @@ public abstract class RebalanceImpl {
                 }
 
                 if (mqSet != null && cidAll != null) {
+                    /**
+                     * mqAll：  当前topic下的所有queue
+                     * cidAll： 当前消费组下的所有消费者
+                     */
                     List<MessageQueue> mqAll = new ArrayList<MessageQueue>();
                     mqAll.addAll(mqSet);
 
