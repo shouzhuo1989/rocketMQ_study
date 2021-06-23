@@ -1,0 +1,35 @@
+# consumer结构分析
+
+MQClientManager只有一个
+MQClientInstance可以有多个
+defaultMQPushConsumer可以有多个，每个defaultMQPushConsumer可以用自己的MQClientInstance，也可以公用一个
+
+每个defaultMQPushConsumer有自己的RebalanceImpl，RebalanceImpl里面有一个hash表，里面记录了当前消费者的订阅信息
+每个defaultMQPushConsumer有自己的PullAPIWrapper
+每个defaultMQPushConsumer有自己的consumeMessageService
+每个MQClientInstance都维护了一个map，里面是使用自己的defaultMQPushConsumer和其group的对应关系
+
+每个MQClientInstance有自己的mQClientAPIImpl 》负责netty
+每个MQClientInstance有自己的pullMessageService 》负责拉取消息
+每个MQClientInstance有自己的rebalanceService 》负责负载均衡
+每个MQClientInstance有自己的ConsumerStatsManager 》负责消费状态管理
+
+每个mQClientAPIImpl有自己的NettyRemotingClient
+
+总结： 假如只有一个消费者，那么就只有一个MQClientInstance，也就只有一个mQClientAPIImpl，也就只有一个NettyRemotingClient；
+
+
+
+## 负载均衡：
+每个MQClientInstance拿出自己维护的consumer
+每个consumer拿出自己的订阅信息，一个topic一个topic的去负载均衡
+先根据topic从broker上拉取当前topic下的queue的分布情况
+然后根据消费者组获取clientid(前面我们说：【每个MQClientInstance都维护了一个map，里面是使用自己的defaultMQPushConsumer和其group的对应关系】，反过来看，就是要找到所有的map，
+当前group存在于其中；然后根据map找到对应的clientid)
+
+
+
+
+
+
+

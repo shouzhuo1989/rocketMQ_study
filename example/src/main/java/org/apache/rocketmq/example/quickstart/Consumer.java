@@ -56,7 +56,7 @@ public class Consumer {
         /**
          * 假如订阅多个topic的话，就调用subscribe方法多次
          */
-        consumer.subscribe("topic_kele", "*");
+        consumer.subscribe("kele", "*");
 
         consumer.registerMessageListener(new MessageListenerConcurrently() {
 

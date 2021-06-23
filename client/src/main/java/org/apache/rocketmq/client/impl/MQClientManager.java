@@ -32,6 +32,9 @@ public class MQClientManager {
     private ConcurrentMap<String/* clientId */, MQClientInstance> factoryTable =
         new ConcurrentHashMap<String, MQClientInstance>();
 
+    /**
+     * 单例模式
+     */
     private MQClientManager() {
 
     }
