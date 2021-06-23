@@ -362,6 +362,9 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         throws InterruptedException, RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException {
         long beginStartTime = System.currentTimeMillis();
         //根据broker的地址获取channel   这里实际上就是向broker发起连接
+        /**
+         * 进程和进程之间的连接，实质上是tcp连接，这个连接是断还是不断两端都可以操作，就是说谁都可以挂电话
+         */
         final Channel channel = this.getAndCreateChannel(addr);
         if (channel != null && channel.isActive()) {
             try {
