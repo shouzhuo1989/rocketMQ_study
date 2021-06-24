@@ -1,3 +1,13 @@
+每一个类的设计目的是什么
+
+由于一个类的引用可能会被多个线程持有，所以类中的数据有并发安全问题，而类中的锁就是为了解决这个问题；
+
+铁锹  每个人都用自己的铁锹自然不会有问题
+
+
+结构   有机整体    持久运作 
+
+
 # consumer结构分析
 
 MQClientManager只有一个
@@ -26,6 +36,18 @@ defaultMQPushConsumer可以有多个，每个defaultMQPushConsumer可以用自�
 先根据topic从broker上拉取当前topic下的queue的分布情况
 然后根据消费者组获取clientid(前面我们说：【每个MQClientInstance都维护了一个map，里面是使用自己的defaultMQPushConsumer和其group的对应关系】，反过来看，就是要找到所有的map，
 当前group存在于其中；然后根据map找到对应的clientid)
+
+
+消费者  记录自己的订阅信息    有netty    有负载均衡    有消息拉取服务
+
+
+
+
+
+生产者和消费者 只是客户端    broker是服务端 接受生产者和消费者的请求  也是客户端 向nameServ发送请求
+nameServ是服务端，接收生产者、消费者、broker的请求
+
+
 
 
 

@@ -76,6 +76,11 @@ public class PullMessageService extends ServiceThread {
         return scheduledExecutorService;
     }
 
+
+    /**
+     * map  clientid
+     * 一个消费者对应一个clientid   一个clientid对应多个消费者
+     */
     private void pullMessage(final PullRequest pullRequest) {
         final MQConsumerInner consumer = this.mQClientFactory.selectConsumer(pullRequest.getConsumerGroup());
         if (consumer != null) {

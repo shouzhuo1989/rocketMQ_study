@@ -45,6 +45,9 @@ import org.apache.rocketmq.common.protocol.heartbeat.SubscriptionData;
  */
 public abstract class RebalanceImpl {
     protected static final InternalLogger log = ClientLogger.getLog();
+    /**
+     * 是否有并发问题，需要看设计，是否要并发操作这个容器
+     */
     protected final ConcurrentMap<MessageQueue, ProcessQueue> processQueueTable = new ConcurrentHashMap<MessageQueue, ProcessQueue>(64);
     protected final ConcurrentMap<String/* topic */, Set<MessageQueue>> topicSubscribeInfoTable =
         new ConcurrentHashMap<String, Set<MessageQueue>>();
@@ -216,6 +219,13 @@ public abstract class RebalanceImpl {
         }
     }
 
+
+    /**
+     * 关于并发错误：
+     *
+     * 并发错误实质上是一种由于事务不完整性导致的业务错误，就是说我们拿到了从业务角度看错误的数据
+     *
+     */
     public void doRebalance(final boolean isOrder) {
         //todo  subscriptionInner中的数据是什么时候进去的？
         Map<String, SubscriptionData> subTable = this.getSubscriptionInner();
@@ -399,6 +409,9 @@ public abstract class RebalanceImpl {
 
                 this.removeDirtyOffset(mq);
                 ProcessQueue pq = new ProcessQueue();
+                /**
+                 * 集群模式下  这里会从broker上拉取当前消费者所属的组对当前topic消费到了哪里
+                 */
                 long nextOffset = this.computePullFromWhere(mq);
                 if (nextOffset >= 0) {
                     ProcessQueue pre = this.processQueueTable.putIfAbsent(mq, pq);
