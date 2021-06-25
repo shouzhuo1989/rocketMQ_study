@@ -1067,7 +1067,9 @@ public class MQClientInstance {
         String brokerAddr = null;
         boolean slave = false;
         boolean found = false;
-
+        /**
+         *从本地缓存的broker列表中拿到一个broker地址，该broker有可能是主也有可能是从
+         */
         HashMap<Long/* brokerId */, String/* address */> map = this.brokerAddrTable.get(brokerName);
         if (map != null && !map.isEmpty()) {
             for (Map.Entry<Long, String> entry : map.entrySet()) {

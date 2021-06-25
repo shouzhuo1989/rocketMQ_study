@@ -64,15 +64,15 @@ public class Producer {
          */
         producer.start();
 
-        for (int i = 0; i < 12; i++) {
+        for (int i = 0; i < 2; i++) {
             try {
 
                 /*
                  * Create a message instance, specifying topic, tag and message body.
                  */
-                Message msg = new Message("kele" /* Topic */,
-                    "TagA" /* Tag */,
-                    ("Hello RocketMQ " + i).getBytes(RemotingHelper.DEFAULT_CHARSET) /* Message body */
+                Message msg = new Message("kele5" /* Topic */,
+                    "TagA" /* Tag */, new byte[10]
+                   // ("Hello RocketMQ " + i).getBytes(RemotingHelper.DEFAULT_CHARSET) /* Message body */
                 );
 
                 // 设置延时等级3,这个消息将在10s之后发送(现在只支持固定的几个时间,详看delayTimeLevel)

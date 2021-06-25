@@ -531,7 +531,10 @@ public class DefaultMessageStore implements MessageStore {
      * @param offset Logical offset to start from. 待拉取偏移量  queueOffset
      * @param maxMsgNums Maximum count of messages to query. 最大拉取数量
      * @param messageFilter Message filter used to screen desired messages. 消息过滤器
-     * @return
+     *
+     * 每一个队列是一个文件
+     * commitLog是一个文件
+     *
      */
     public GetMessageResult getMessage(final String group, final String topic, final int queueId, final long offset,
         final int maxMsgNums,
@@ -595,9 +598,9 @@ public class DefaultMessageStore implements MessageStore {
                         final boolean diskFallRecorded = this.messageStoreConfig.isDiskFallRecorded();
                         ConsumeQueueExt.CqExtUnit cqExtUnit = new ConsumeQueueExt.CqExtUnit();
                         for (; i < bufferConsumeQueue.getSize() && i < maxFilterMessageCount; i += ConsumeQueue.CQ_STORE_UNIT_SIZE) {
-                            //读了八个字节
+                            //读了八个字节  消息偏移量   在commitlog文件中，从哪里开始读
                             long offsetPy = bufferConsumeQueue.getByteBuffer().getLong();
-                            //读了四个字节 消息长度、
+                            //读了四个字节 消息长度、   读取多少个字节
                             int sizePy = bufferConsumeQueue.getByteBuffer().getInt();
                             //接着读八个字节 tag hashcode
                             long tagsCode = bufferConsumeQueue.getByteBuffer().getLong();

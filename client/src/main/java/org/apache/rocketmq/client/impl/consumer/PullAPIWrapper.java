@@ -153,6 +153,11 @@ public class PullAPIWrapper {
         final CommunicationMode communicationMode,
         final PullCallback pullCallback
     ) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
+        /**
+         * todo 向broker发送请求的时候，client需要选择向哪个broker发
+         *
+         * findBrokerAddressInAdmin  findBrokerAddressInSubscribe   findBrokerAddressInPublish
+         */
         FindBrokerResult findBrokerResult =
             this.mQClientFactory.findBrokerAddressInSubscribe(mq.getBrokerName(),
                 this.recalculatePullFromWhichNode(mq), false);
