@@ -253,11 +253,93 @@ public class BrokerController {
     public boolean initialize() throws CloneNotSupportedException {
         /**
          * 加载C:\Users\asd\store\config\topics.json   第一次启动文件还没有
+         *
+         * "%RETRY%consumer_group_kele":{
+         * 			"order":false,
+         * 			"perm":6,
+         * 			"readQueueNums":1,
+         * 			"topicFilterType":"SINGLE_TAG",
+         * 			"topicName":"%RETRY%consumer_group_kele",
+         * 			"topicSysFlag":0,
+         * 			"writeQueueNums":1
+         *                },
+         * 		"DefaultCluster":{
+         * 			"order":false,
+         * 			"perm":7,
+         * 			"readQueueNums":16,
+         * 			"topicFilterType":"SINGLE_TAG",
+         * 			"topicName":"DefaultCluster",
+         * 			"topicSysFlag":0,
+         * 			"writeQueueNums":16
+         *        },
+         * 		"kele":{
+         * 			"order":false,
+         * 			"perm":6,
+         * 			"readQueueNums":4,
+         * 			"topicFilterType":"SINGLE_TAG",
+         * 			"topicName":"kele",
+         * 			"topicSysFlag":0,
+         * 			"writeQueueNums":4
+         *        },
+         *
+         * 每一个topic的配置信息
          */
         boolean result = this.topicConfigManager.load();
         //加载C:\Users\asd\store\config\consumerOffset.json
+        /**
+         * {
+         * 	"offsetTable":{
+         * 		"kele@consumer_group_xiaoyan":{0:2,1:2,2:2,3:2
+         *                },
+         * 		"%RETRY%consumer_group_xiaoyan@consumer_group_xiaoyan":{0:0
+         *        },
+         * 		"%RETRY%consumer_group_kele@consumer_group_kele":{0:0
+         *        },
+         * 		"kele@consumer_group_kele":{0:2,1:2,2:2,3:2
+         *        }* 	}
+         * }
+         *
+         * 每一个topic下的queue被每个消费者组消费到了哪里
+         */
         result = result && this.consumerOffsetManager.load();
         //加载C:\Users\asd\store\config\subscriptionGroup.json
+        /**
+         * "consumer_group_kele":{
+         * 			"brokerId":0,
+         * 			"consumeBroadcastEnable":true,
+         * 			"consumeEnable":true,
+         * 			"consumeFromMinEnable":true,
+         * 			"groupName":"consumer_group_kele",
+         * 			"notifyConsumerIdsChangedEnable":true,
+         * 			"retryMaxTimes":16,
+         * 			"retryQueueNums":1,
+         * 			"whichBrokerWhenConsumeSlowly":1
+         *                },
+         * 		"TOOLS_CONSUMER":{
+         * 			"brokerId":0,
+         * 			"consumeBroadcastEnable":true,
+         * 			"consumeEnable":true,
+         * 			"consumeFromMinEnable":true,
+         * 			"groupName":"TOOLS_CONSUMER",
+         * 			"notifyConsumerIdsChangedEnable":true,
+         * 			"retryMaxTimes":16,
+         * 			"retryQueueNums":1,
+         * 			"whichBrokerWhenConsumeSlowly":1
+         *        },
+         * 		"consumer_group_xiaoyan":{
+         * 			"brokerId":0,
+         * 			"consumeBroadcastEnable":true,
+         * 			"consumeEnable":true,
+         * 			"consumeFromMinEnable":true,
+         * 			"groupName":"consumer_group_xiaoyan",
+         * 			"notifyConsumerIdsChangedEnable":true,
+         * 			"retryMaxTimes":16,
+         * 			"retryQueueNums":1,
+         * 			"whichBrokerWhenConsumeSlowly":1
+         *        },
+         *
+         * 在组的层面记录订阅信息
+         */
         result = result && this.subscriptionGroupManager.load();
         //加载C:\Users\asd\store\config\consumerFilter.json
         result = result && this.consumerFilterManager.load();

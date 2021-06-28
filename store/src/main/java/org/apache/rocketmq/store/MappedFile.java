@@ -79,7 +79,7 @@ public class MappedFile extends ReferenceResource {
     private String fileName;
     //该文件的初始偏移量
     /**
-     * 偏移量（offset）：每条消息会有一个offset   比如一个文件是1G,那么第一个文件的第一条消息的offset是0，第二条是1；
+     * 偏移量（offset）： 每条消息会有一个offset   比如一个文件是1G,那么第一个文件的第一条消息的offset是0，第二条是1；
      *                 第二个文件的第一条消息的offset是1024*1024*1024，第二条是（1024*1024*1024）+1；
      * 指针(position):标注位置的，比如这个文件写到哪里了，读到哪里了
      */

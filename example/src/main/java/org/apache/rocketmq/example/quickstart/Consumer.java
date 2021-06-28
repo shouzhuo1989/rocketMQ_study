@@ -46,7 +46,7 @@ public class Consumer {
     public static void main(String[] args) throws InterruptedException, MQClientException {
 
 
-        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("consumer_group_kele");
+        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("consumer_group_xiaoyan");
 
         consumer.setNamesrvAddr("127.0.0.1:9876");
         //consumer.setUnitName();
@@ -56,7 +56,7 @@ public class Consumer {
         /**
          * 假如订阅多个topic的话，就调用subscribe方法多次
          */
-        consumer.subscribe("kele5", "*");
+        consumer.subscribe("kele", "*");
 
         consumer.registerMessageListener(new MessageListenerConcurrently() {
 

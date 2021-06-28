@@ -41,7 +41,7 @@ public class Producer {
          * Instantiate with a producer group name.
          */
         //给一个线程A，我们new一个DefaultMQProducer对象
-        DefaultMQProducer producer = new DefaultMQProducer("please_rename_unique_group_name");
+        DefaultMQProducer producer = new DefaultMQProducer("producer_group_kele");
 
         /*
          * Specify name server addresses.
@@ -64,13 +64,13 @@ public class Producer {
          */
         producer.start();
 
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 4; i++) {
             try {
 
                 /*
                  * Create a message instance, specifying topic, tag and message body.
                  */
-                Message msg = new Message("kele5" /* Topic */,
+                Message msg = new Message("kele" /* Topic */,
                     "TagA" /* Tag */, new byte[10]
                    // ("Hello RocketMQ " + i).getBytes(RemotingHelper.DEFAULT_CHARSET) /* Message body */
                 );
