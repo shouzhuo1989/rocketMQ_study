@@ -52,6 +52,9 @@ public class TransientStorePool {
 
             final long address = ((DirectBuffer) byteBuffer).address();
             Pointer pointer = new Pointer(address);
+            /**
+             * 假如没有对jdk的深刻理解，又怎么会写出这样的代码？
+             */
             LibC.INSTANCE.mlock(pointer, new NativeLong(fileSize));
 
             availableBuffers.offer(byteBuffer);

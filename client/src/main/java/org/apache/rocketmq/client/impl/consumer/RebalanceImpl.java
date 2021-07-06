@@ -370,6 +370,9 @@ public abstract class RebalanceImpl {
             MessageQueue mq = next.getKey();
             ProcessQueue pq = next.getValue();
 
+            /**
+             * 本次负载均衡分配过来要消费的MessageQueue
+             */
             if (mq.getTopic().equals(topic)) {
                 // 本次负载均衡之后拿到的mqSet中不包括上一次负载均衡后得到的mq
                 if (!mqSet.contains(mq)) {
@@ -421,6 +424,7 @@ public abstract class RebalanceImpl {
                         log.info("doRebalance, {}, add a new mq, {}", consumerGroup, mq);
                         /**
                          * 本次消费：消费者从哪个broker的哪个topic下的哪个队列的哪里开始消费
+                         *         消费者属于哪个消费者组
                          */
                         PullRequest pullRequest = new PullRequest();
                         pullRequest.setConsumerGroup(consumerGroup);

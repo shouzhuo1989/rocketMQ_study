@@ -41,6 +41,13 @@ import org.apache.rocketmq.store.config.FlushDiskType;
 import org.apache.rocketmq.store.util.LibC;
 import sun.nio.ch.DirectBuffer;
 
+/**
+ * 软件 和  硬件
+ *
+ * n多进程   一个进程分出n多线程
+ *
+ * 把内存中的数据置换到磁盘，是操作系统干的，同样，不置换自然也可以做
+ */
 public class MappedFile extends ReferenceResource {
 
     //操作系统每页大小，默认4k

@@ -141,6 +141,9 @@ public class RebalancePushImpl extends RebalanceImpl {
     public long computePullFromWhere(MessageQueue mq) {
         long result = -1;
         //CONSUME_FROM_LAST_OFFSET
+        /**
+         * 从这里可以看出ConsumeFromWhere可以通过set方法给到DefaultMQPushConsumer
+         */
         final ConsumeFromWhere consumeFromWhere = this.defaultMQPushConsumerImpl.getDefaultMQPushConsumer().getConsumeFromWhere();
         final OffsetStore offsetStore = this.defaultMQPushConsumerImpl.getOffsetStore();
         switch (consumeFromWhere) {
@@ -148,6 +151,9 @@ public class RebalancePushImpl extends RebalanceImpl {
             case CONSUME_FROM_MIN_OFFSET:
             case CONSUME_FROM_MAX_OFFSET:
             case CONSUME_FROM_LAST_OFFSET: {
+                /**
+                 * 即使设置了CONSUME_FROM_LAST_OFFSET，这里获取lastOffset会从broker上拉取；由于是新的consumer group，所以broker上存储的lastOffset一定是0
+                 */
                 long lastOffset = offsetStore.readOffset(mq, ReadOffsetType.READ_FROM_STORE);
                 if (lastOffset >= 0) {
                     result = lastOffset;

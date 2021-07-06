@@ -238,6 +238,9 @@ public abstract class NettyRemotingAbstract {
                 }
             };
 
+            /**
+             * 由具体的请求处理器实现拒绝策略
+             */
             if (pair.getObject1().rejectRequest()) {
                 final RemotingCommand response = RemotingCommand.createResponseCommand(RemotingSysResponseCode.SYSTEM_BUSY,
                     "[REJECTREQUEST]system busy, start flow control for a while");
@@ -249,6 +252,9 @@ public abstract class NettyRemotingAbstract {
             try {
                 final RequestTask requestTask = new RequestTask(run, ctx.channel(), cmd);
                 pair.getObject2().submit(requestTask);
+                /**
+                 * 线程池拒绝策略
+                 */
             } catch (RejectedExecutionException e) {
                 if ((System.currentTimeMillis() % 10000) == 0) {
                     log.warn(RemotingHelper.parseChannelRemoteAddr(ctx.channel())

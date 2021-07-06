@@ -120,6 +120,9 @@ public class ConsumerManageProcessor implements NettyRequestProcessor {
         final UpdateConsumerOffsetRequestHeader requestHeader =
             (UpdateConsumerOffsetRequestHeader) request
                 .decodeCommandCustomHeader(UpdateConsumerOffsetRequestHeader.class);
+        /**
+         * 更新消费进度
+         */
         this.brokerController.getConsumerOffsetManager().commitOffset(RemotingHelper.parseChannelRemoteAddr(ctx.channel()), requestHeader.getConsumerGroup(),
             requestHeader.getTopic(), requestHeader.getQueueId(), requestHeader.getCommitOffset());
         response.setCode(ResponseCode.SUCCESS);
@@ -137,18 +140,29 @@ public class ConsumerManageProcessor implements NettyRequestProcessor {
             (QueryConsumerOffsetRequestHeader) request
                 .decodeCommandCustomHeader(QueryConsumerOffsetRequestHeader.class);
 
-        long offset =
-            this.brokerController.getConsumerOffsetManager().queryOffset(
+        /**
+         * 先查当前queue的进度记录
+         */
+        long offset = this.brokerController.getConsumerOffsetManager().queryOffset(
                 requestHeader.getConsumerGroup(), requestHeader.getTopic(), requestHeader.getQueueId());
 
+        /**
+         * 如果查到了，那就从当前offset开始消费
+         */
         if (offset >= 0) {
             responseHeader.setOffset(offset);
             response.setCode(ResponseCode.SUCCESS);
             response.setRemark(null);
         } else {
+            /**
+             * 如果没有查到，就查下当前queue的MinOffset
+             */
             long minOffset =
                 this.brokerController.getMessageStore().getMinOffsetInQueue(requestHeader.getTopic(),
                     requestHeader.getQueueId());
+            /**
+             * 一个新的consumer group消费一个旧的topic，关键在于commitlog中数据的多少
+             */
             if (minOffset <= 0
                 && !this.brokerController.getMessageStore().checkInDiskByConsumeOffset(
                 requestHeader.getTopic(), requestHeader.getQueueId(), 0)) {

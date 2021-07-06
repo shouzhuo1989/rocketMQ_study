@@ -54,4 +54,10 @@ public class BrokerFixedThreadPoolExecutor extends ThreadPoolExecutor {
     protected <T> RunnableFuture<T> newTaskFor(final Runnable runnable, final T value) {
         return new FutureTaskExt<T>(runnable, value);
     }
+
+    @Override
+    protected void afterExecute(Runnable r, Throwable t) {
+
+
+    }
 }

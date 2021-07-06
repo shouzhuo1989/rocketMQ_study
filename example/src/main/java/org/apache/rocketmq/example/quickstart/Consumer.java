@@ -46,7 +46,7 @@ public class Consumer {
     public static void main(String[] args) throws InterruptedException, MQClientException {
 
 
-        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("consumer_group_xiaoyan");
+        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("consumer_group_xiaoyanNew1");
 
         consumer.setNamesrvAddr("127.0.0.1:9876");
         //consumer.setUnitName();

@@ -1341,6 +1341,35 @@ public class CommitLog {
             this.msgStoreItemMemory.putShort((short) propertiesLength);
             if (propertiesLength > 0)
                 this.msgStoreItemMemory.put(propertiesData);
+            /**
+             * 所有的数据转化成字节数组
+             *
+             * 我们需要知道每行代码的后面都发生了哪些事情吗  或者说  我们能知道吗
+             *
+             * 如何操作内存
+             *
+             * 我们被不该我们考虑的问题迷惑了？
+             *
+             * 数据能读到内存中   能写到磁盘上    顺序性是操作系统保证的
+             *
+             * 应用开发者
+             *
+             * 我们要存    我们要取
+             *
+             * 怎么存高效   怎么取高效     存取怎么配合比较高效
+             *
+             *
+             * 有人不断给我送货   有人不断从我这儿取货
+             *
+             * 我有门店  有仓库
+             *
+             * 尽量让取的货在门店里
+             *
+             *
+             *
+             *
+             *
+             */
 
             final long beginTimeMills = CommitLog.this.defaultMessageStore.now();
             // Write messages to the queue buffer
